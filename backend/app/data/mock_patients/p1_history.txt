@@ -1,0 +1,5 @@
+Patient: Maya Okafor, DOB 1991-03-14, MRN MO-4471.
+Chief complaint: chronic inflammatory joint pain (rheumatoid-type), moderate-severe.
+History: prior codeine prescription gave NO pain relief and caused nausea. NSAID-tolerant.
+Current meds: none. Allergies: sulfonamides.
+Goal: effective non-opioid-prodrug analgesia + anti-inflammatory therapy.

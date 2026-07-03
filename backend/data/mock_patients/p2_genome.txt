@@ -1,0 +1,3 @@
+#SAMPLE=DANIEL_REYES
+GENE=TPMT  DIPLOTYPE=*3A/*3A  PHENOTYPE=Poor Metabolizer (low activity)
+NOTE: TPMT poor metabolizers accumulate toxic thiopurine metabolites -> severe myelosuppression at standard doses. Requires drastic dose reduction.

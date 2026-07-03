@@ -1,0 +1,4 @@
+#SAMPLE=AISHA_KARIM
+GENE=CYP2C9  DIPLOTYPE=*2/*3  PHENOTYPE=Poor Metabolizer
+GENE=VKORC1  rs9923231=AA      PHENOTYPE=High warfarin sensitivity
+NOTE: CYP2C9 *2/*3 + VKORC1 AA -> markedly reduced warfarin dose requirement; bleeding risk at standard dose.

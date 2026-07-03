@@ -1,0 +1,3 @@
+Patient: Daniel Reyes, DOB 1985-08-02, MRN DR-2210.
+Condition: autoimmune (IBD) requiring immunomodulation.
+Goal: immunomodulatory therapy with thiopurine-class dosing adjusted for TPMT deficiency.

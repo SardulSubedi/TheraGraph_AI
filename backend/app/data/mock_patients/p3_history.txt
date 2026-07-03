@@ -1,0 +1,3 @@
+Patient: Aisha Karim, DOB 1978-11-30, MRN AK-9982.
+Condition: needs anticoagulation (atrial fibrillation).
+Goal: anticoagulation with genotype-guided low starting dose.

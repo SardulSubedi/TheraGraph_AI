@@ -1,0 +1,5 @@
+#SAMPLE=MAYA_OKAFOR
+GENE=CYP2D6  DIPLOTYPE=*4/*4  PHENOTYPE=Poor Metabolizer
+GENE=CYP2C19 DIPLOTYPE=*1/*1  PHENOTYPE=Normal Metabolizer
+GENE=VKORC1  rs9923231=GG      PHENOTYPE=Normal warfarin sensitivity
+NOTE: CYP2D6 poor metabolizers cannot convert codeine/tramadol (prodrugs) to active form -> no analgesia + toxic parent accumulation.
