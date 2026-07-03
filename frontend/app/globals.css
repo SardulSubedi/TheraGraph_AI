@@ -30,6 +30,30 @@ html {
   scroll-behavior: smooth;
 }
 
+/*
+ * Clinical (light) theme — applied to the authenticated app shell after login.
+ * Overriding the design tokens on a wrapping element re-themes every `bg-bg`,
+ * `text-text`, `border-border`, etc. utility for that subtree (Tailwind v4 maps
+ * those utilities to these CSS variables), so the public landing/login stay dark.
+ */
+.theme-clinical {
+  --color-bg: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-accent: #0e7490;
+  --color-danger: #e11d48;
+  --color-success: #059669;
+  color-scheme: light;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.theme-clinical ::selection {
+  background: color-mix(in oklab, var(--color-accent) 22%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

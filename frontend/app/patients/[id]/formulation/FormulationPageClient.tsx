@@ -3,22 +3,26 @@
 import { useState } from "react";
 import { formulate } from "@/app/lib/api";
 import type { Formulation } from "@/app/lib/types";
-import { FormulationLedger } from "@/app/components/FormulationLedger";
-import { Button } from "@/app/components/ui/Button";
+import { GeneticRisks } from "@/app/components/formulation/GeneticRisks";
+import { RegimenLedger } from "@/app/components/formulation/RegimenLedger";
+import { ClinicalReport } from "@/app/components/formulation/ClinicalReport";
+import { PatientChat } from "@/app/components/formulation/PatientChat";
 import { Card } from "@/app/components/ui/Card";
-import { Badge } from "@/app/components/ui/Badge";
-import { Input } from "@/app/components/ui/Input";
 import { Skeleton } from "@/app/components/ui/Skeleton";
 import { Toaster } from "@/app/components/ui/Toast";
 
 interface FormulationPageClientProps {
   patientId: string;
+  patientName: string;
 }
 
 export function FormulationPageClient({
   patientId,
+  patientName,
 }: FormulationPageClientProps) {
-  const [indication, setIndication] = useState("chronic inflammatory pain");
+  const [indication, setIndication] = useState(
+    "chronic inflammatory joint pain (rheumatoid-type)",
+  );
   const [formulation, setFormulation] = useState<Formulation | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,91 +40,69 @@ export function FormulationPageClient({
     }
   };
 
-  const contraindications = formulation?.contraindications_flagged ?? [];
+  const risks = formulation?.genetic_risks ?? [];
+  const contraindications = formulation?.contraindication_details ?? [];
 
   return (
-    <div className="grid min-h-[calc(100vh-120px)] gap-4 p-4 lg:grid-cols-3">
+    <div className="mx-auto flex max-w-[1500px] flex-col gap-4 p-4 lg:p-6">
       <Toaster />
-      <Card className="flex flex-col gap-3">
-        <p className="micro-label text-text-secondary">
-          Genetic Risks & Contraindications
-        </p>
-        {busy ? (
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-full bg-border" />
-            <Skeleton className="h-6 w-3/4 bg-border" />
-          </div>
-        ) : contraindications.length === 0 ? (
-          <p className="text-sm text-text-secondary">
-            {formulation
-              ? "No contraindications flagged for this formulation."
-              : "Generate a formulation to surface flagged risks from the patient graph."}
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {contraindications.map((c) => (
-              <li key={c}>
-                <Badge tone="danger">{c}</Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
 
-      <div className="flex flex-col gap-4">
-        <Card>
-          <p className="micro-label text-text-secondary">Synthesis Console</p>
-          <div className="mt-3">
-            <Input
-              label="Indication"
+      <Card>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1">
+            <label htmlFor="indication" className="micro-label text-text-secondary">
+              Synthesis console · indication
+            </label>
+            <input
+              id="indication"
               value={indication}
               onChange={(e) => setIndication(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void generate();
+              }}
+              placeholder="e.g. anticoagulation for atrial fibrillation"
+              className="mt-1.5 w-full rounded-md border border-border bg-bg px-3 py-2.5 text-sm text-text outline-none transition-colors focus:border-accent/50"
             />
           </div>
-          <Button
-            className="mt-3"
+          <button
+            type="button"
             disabled={busy}
             onClick={() => void generate()}
+            className="rounded-md bg-accent px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
           >
-            {busy ? "Generating…" : "Generate"}
-          </Button>
-          {error && <p className="mt-2 text-xs text-danger">{error}</p>}
-        </Card>
+            {busy ? "Synthesizing…" : "Generate regimen"}
+          </button>
+        </div>
+        {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <GeneticRisks
+          risks={risks}
+          contraindications={contraindications}
+          loading={busy}
+          hasFormulation={formulation !== null}
+        />
+
         {busy ? (
           <Card className="flex min-h-[320px] flex-col gap-3">
             <Skeleton className="h-4 w-32 bg-border" />
-            <Skeleton className="h-8 w-24 bg-border" />
-            <Skeleton className="h-6 w-full bg-border" />
-            <Skeleton className="h-32 w-full bg-border" />
+            <Skeleton className="h-3 w-full bg-border" />
+            <Skeleton className="h-24 w-full bg-border" />
+            <Skeleton className="h-24 w-full bg-border" />
           </Card>
         ) : (
-          <FormulationLedger formulation={formulation} />
+          <RegimenLedger formulation={formulation} />
         )}
+
+        <ClinicalReport formulation={formulation} patientName={patientName} />
       </div>
 
-      <Card>
-        <p className="micro-label text-text-secondary">Delivery JSON</p>
-        {busy ? (
-          <div className="mt-4 space-y-2">
-            <Skeleton className="h-4 w-full bg-border" />
-            <Skeleton className="h-4 w-full bg-border" />
-            <Skeleton className="h-4 w-5/6 bg-border" />
-            <Skeleton className="h-4 w-4/6 bg-border" />
-          </div>
-        ) : formulation ? (
-          <pre className="mt-2 max-h-[calc(100vh-200px)] overflow-auto rounded bg-bg p-3 font-mono text-xs leading-relaxed text-text-secondary">
-            {JSON.stringify(formulation, null, 2)}
-          </pre>
-        ) : (
-          <div className="mt-6 flex flex-col items-center gap-2 text-center">
-            <p className="text-lg font-medium text-text">No formulation yet</p>
-            <p className="max-w-xs text-sm text-text-secondary">
-              JSON payload for CDMO / compounding partner appears here after
-              generation.
-            </p>
-          </div>
-        )}
-      </Card>
+      <PatientChat
+        patientId={patientId}
+        patientName={patientName}
+        indication={indication}
+      />
     </div>
   );
 }

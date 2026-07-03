@@ -53,7 +53,7 @@ export function CommandBar({ patients, onNewPatient }: CommandBarProps) {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-bg/80 pt-[20vh] backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 pt-[20vh] backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
           <div

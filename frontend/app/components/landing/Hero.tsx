@@ -1,66 +1,64 @@
 import Link from "next/link";
-import { CausalChain } from "./CausalChain";
+import { DnaHelix } from "./DnaHelix";
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center px-6 pb-16 pt-28 text-center">
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-bg px-6">
+      <DnaHelix />
+
+      {/* Readability vignette so the headline sits cleanly over the helix. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute left-1/2 top-1/3 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/10 blur-[130px]" />
-        <div
-          className="absolute inset-0 opacity-[0.35]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0)",
-            backgroundSize: "32px 32px",
-            maskImage:
-              "radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent)",
-          }}
-        />
-      </div>
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 52% 42% at 50% 48%, rgba(9,9,11,0.72) 0%, rgba(9,9,11,0.28) 58%, transparent 100%)",
+        }}
+      />
 
-      <div className="relative z-10 mx-auto max-w-4xl">
-        <p className="micro-label mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3 py-1 text-accent">
+      <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center text-center">
+        <p className="micro-label mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-text-secondary backdrop-blur-sm">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
           Clinical memory graph · powered by Cognee
         </p>
-        <h1 className="text-5xl font-bold tracking-tight text-text sm:text-6xl lg:text-7xl">
+
+        <h1 className="text-balance text-5xl font-semibold tracking-tight text-text sm:text-6xl lg:text-7xl">
           Medical AI that never
-          <br className="hidden sm:block" />{" "}
-          <span className="bg-gradient-to-r from-accent to-cyan-300 bg-clip-text text-transparent">
-            forgets a patient
-          </span>
+          <br />
+          <span className="text-white/60">forgets a patient</span>
         </h1>
-        <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-text-secondary sm:text-xl">
-          Most medical AI has amnesia — it treats every patient like a stranger.
-          In personalized medicine, forgetting one genetic marker can be fatal.
-          TheraGraph gives AI a permanent, evolving clinical memory, turning
-          static prescribing into an adaptive healing loop.
+
+        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-text-secondary sm:text-lg">
+          A permanent, evolving memory for personalized medicine — genome to
+          therapy, remembered across every visit.
         </p>
 
-        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
           <Link
             href="/signup"
-            className="rounded-md bg-accent px-6 py-3 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+            className="rounded-md bg-white px-6 py-3 text-sm font-medium text-bg transition-transform hover:-translate-y-0.5"
           >
-            Get started — it&apos;s free
+            Get started
           </Link>
-          <a
-            href="#problem"
-            className="rounded-md border border-border px-6 py-3 text-sm font-medium text-text transition-colors hover:border-accent/50 hover:text-accent"
+          <Link
+            href="/login"
+            className="rounded-md border border-white/15 px-6 py-3 text-sm font-medium text-text transition-colors hover:border-white/40"
           >
-            See how it works
-          </a>
+            Sign in
+          </Link>
         </div>
-        <p className="mt-4 text-xs text-text-secondary">
-          Or explore the live demo — sign in with{" "}
-          <span className="text-text">demo@gmail.com</span> /{" "}
-          <span className="text-text">Demo123</span>
-        </p>
 
-        <CausalChain />
+        <p className="mt-6 text-xs text-text-secondary/70">
+          Live demo · <span className="text-text-secondary">demo@gmail.com</span>{" "}
+          / <span className="text-text-secondary">Demo123</span>
+        </p>
+      </div>
+
+      <div
+        aria-hidden
+        className="pointer-events-none absolute bottom-8 left-1/2 z-10 -translate-x-1/2 text-text-secondary/50"
+      >
+        <span className="text-xs tracking-widest">SCROLL</span>
       </div>
     </section>
   );

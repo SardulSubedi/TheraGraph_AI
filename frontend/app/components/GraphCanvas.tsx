@@ -69,18 +69,22 @@ function fallbackGraph(patientName?: string): GraphData {
 }
 
 function nodeColor(type?: string): string {
-  if (type === "patient") return "#18181B";
-  if (type === "drug") return "#F43F5E22";
-  if (type === "variant" || type === "phenotype" || type === "condition")
-    return "#06B6D418";
-  if (type === "gene") return "#06B6D422";
-  return "#06B6D422";
+  if (type === "patient") return "#0f172a";
+  if (type === "drug") return "#fef2f2";
+  if (type === "gene") return "#cffafe";
+  return "#ecfeff";
 }
 
 function nodeBorder(type?: string): string {
-  if (type === "patient") return "#52525B";
-  if (type === "drug") return "#F43F5E";
-  return "#06B6D4";
+  if (type === "patient") return "#0f172a";
+  if (type === "drug") return "#e11d48";
+  return "#0891b2";
+}
+
+function nodeText(type?: string): string {
+  if (type === "patient") return "#ffffff";
+  if (type === "drug") return "#9f1239";
+  return "#0f172a";
 }
 
 export function GraphCanvas({ data, patientName }: GraphCanvasProps) {
@@ -108,7 +112,7 @@ export function GraphCanvas({ data, patientName }: GraphCanvasProps) {
           border: `1px solid ${nodeBorder(n.type)}`,
           borderRadius: 8,
           padding: "8px 12px",
-          color: "#FAFAFA",
+          color: nodeText(n.type),
           fontSize: 12,
           maxWidth: 160,
           textAlign: "center" as const,
@@ -124,8 +128,8 @@ export function GraphCanvas({ data, patientName }: GraphCanvasProps) {
         source: e.source,
         target: e.target,
         label: e.label,
-        style: { stroke: "#27272A" },
-        labelStyle: { fill: "#A1A1AA", fontSize: 10 },
+        style: { stroke: "#cbd5e1" },
+        labelStyle: { fill: "#64748b", fontSize: 10 },
       })),
     [graph.edges],
   );
@@ -174,7 +178,7 @@ export function GraphCanvas({ data, patientName }: GraphCanvasProps) {
           onNodeMouseLeave={() => setHovered(null)}
           proOptions={{ hideAttribution: true }}
         >
-          <Background color="#27272A" gap={16} />
+          <Background color="#e2e8f0" gap={16} />
           <Controls />
         </ReactFlow>
       </ReactFlowProvider>

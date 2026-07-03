@@ -1,4 +1,6 @@
 import type {
+  ChatMessage,
+  ChatResponse,
   DeleteResponse,
   FeedbackEntry,
   FeedbackResponse,
@@ -104,6 +106,19 @@ export async function formulate(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ indication }),
+  });
+}
+
+export async function chatWithPatient(
+  patientId: string,
+  message: string,
+  history: ChatMessage[],
+  indication?: string,
+): Promise<ChatResponse> {
+  return request<ChatResponse>(`/api/patients/${patientId}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, history, indication }),
   });
 }
 

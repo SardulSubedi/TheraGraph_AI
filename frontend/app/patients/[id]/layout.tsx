@@ -16,7 +16,7 @@ export default async function PatientLayout({
 
   if (!patient) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
+      <div className="theme-clinical flex min-h-screen flex-col items-center justify-center gap-4 bg-bg p-6">
         <p className="text-text-secondary">
           Patient not found or backend unavailable.
         </p>
@@ -28,7 +28,7 @@ export default async function PatientLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="theme-clinical flex min-h-screen flex-col bg-bg">
       <header className="border-b border-border bg-surface px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <PatientScreenLabel patientName={patient.name} />

@@ -41,7 +41,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
     >
       <button
         type="button"
-        className="absolute inset-0 bg-bg/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
         aria-label="Close dialog"
         onClick={onClose}
       />

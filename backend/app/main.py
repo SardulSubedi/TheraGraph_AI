@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import feedback, formulate, graph, ingest, patients
+from app.routers import chat, feedback, formulate, graph, ingest, patients
 from app.services.cognee_engine import connect
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,7 @@ app.include_router(ingest.router)
 app.include_router(graph.router)
 app.include_router(formulate.router)
 app.include_router(feedback.router)
+app.include_router(chat.router)
 
 
 @app.get("/health")

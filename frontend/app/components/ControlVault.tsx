@@ -73,7 +73,8 @@ export function ControlVault({
   };
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 p-6">
+    <div className="theme-clinical min-h-screen bg-bg">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 p-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="micro-label text-accent">TheraGraph AI</p>
@@ -172,7 +173,7 @@ export function ControlVault({
 
       {showForm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
           onClick={() => setShowForm(false)}
         >
           <Card
@@ -224,6 +225,7 @@ export function ControlVault({
           </Card>
         </div>
       )}
+      </div>
     </div>
   );
 }

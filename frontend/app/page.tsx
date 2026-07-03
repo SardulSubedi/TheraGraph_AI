@@ -1,80 +1,49 @@
 import { LandingNav } from "@/app/components/landing/Nav";
 import { Hero } from "@/app/components/landing/Hero";
-import { Section } from "@/app/components/landing/Section";
-import { LifecycleSection } from "@/app/components/landing/LifecycleSection";
-import { UseCases } from "@/app/components/landing/UseCases";
+import { Reveal } from "@/app/components/landing/Reveal";
 import { Footer } from "@/app/components/landing/Footer";
+
+const LIFECYCLE = [
+  { phase: "Remember", copy: "Genome, labs, and history become one living graph." },
+  { phase: "Recall", copy: "Causal chains surface the right therapy, safely." },
+  { phase: "Improve", copy: "Outcomes refine the memory over time." },
+  { phase: "Forget", copy: "Consent-driven erasure, built in." },
+];
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg text-text">
       <LandingNav />
       <main>
         <Hero />
 
-        <Section
-          id="problem"
-          label="The problem"
-          title="Medical AI forgets"
-        >
-          <p className="text-lg leading-relaxed text-text-secondary">
-            Every session starts from zero. LLMs treat each encounter as
-            isolated — no persistent model of the patient&apos;s genetics,
-            comorbidities, or medication history. In personalized medicine,
-            forgetting a single pharmacogenomic marker can mean the wrong dose,
-            a dangerous interaction, or a missed contraindication.
-          </p>
-        </Section>
-
-        <Section
-          id="insight"
-          label="The insight"
-          title="Clinical facts are a causal web"
-        >
-          <p className="text-lg leading-relaxed text-text-secondary">
-            Medicine isn&apos;t a bag of facts — it&apos;s a graph of cause and
-            effect. A variant in <em className="text-text">CYP2D6</em> affects
-            enzyme activity, which changes drug clearance, which determines
-            whether a standard dose is therapeutic or toxic. Chunk-based vector
-            RAG shreds these long-range links. Retrieve the wrong chunk and the
-            causal chain breaks.
-          </p>
-        </Section>
-
-        <Section
-          id="solution"
-          label="The solution"
-          title="Permanent, evolving clinical memory"
-        >
-          <p className="text-lg leading-relaxed text-text-secondary">
-            TheraGraph builds a knowledge graph on{" "}
-            <span className="text-accent">Cognee</span> — a clinical memory
-            layer that preserves causal relationships across the full patient
-            timeline. Facts connect to facts. New evidence updates existing
-            nodes instead of appending disconnected snippets. The result: AI
-            that remembers, reasons, and adapts.
-          </p>
-        </Section>
-
-        <LifecycleSection />
-
-        <UseCases />
-
-        <Section
-          id="regulatory"
-          label="Regulatory path"
-          title="Modular building blocks, not novel molecules"
-        >
-          <p className="text-lg leading-relaxed text-text-secondary">
-            Personalized formulations use{" "}
-            <span className="text-text">pre-approved</span> active
-            pharmaceutical ingredients and excipients — assembled by licensed
-            CDMOs and compounding partners, not synthesized from scratch. The
-            innovation is in the decision engine: which modules, at what ratios,
-            for which patient graph state. Regulatory credibility comes from
-            the supply chain, not from claiming a new drug entity.
-          </p>
-        </Section>
+        <section className="border-t border-white/5 px-6 py-24">
+          <div className="mx-auto max-w-5xl">
+            <Reveal>
+              <p className="micro-label text-accent">The lifecycle</p>
+              <h2 className="mt-3 max-w-xl text-3xl font-semibold tracking-tight text-text sm:text-4xl">
+                Memory that becomes medicine
+              </h2>
+            </Reveal>
+            <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-white/5 bg-white/5 sm:grid-cols-2 lg:grid-cols-4">
+              {LIFECYCLE.map((item, i) => (
+                <Reveal key={item.phase} delay={i * 70}>
+                  <div className="h-full bg-bg p-6">
+                    <span className="micro-label text-accent">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <p className="mt-3 text-lg font-medium text-text">
+                      {item.phase}
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                      {item.copy}
+                    </p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <Footer />
       </main>

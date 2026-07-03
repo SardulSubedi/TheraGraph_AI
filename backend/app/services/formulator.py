@@ -1,107 +1,141 @@
-import json
+"""Formulation generator.
+
+Produces a *real, dispensable-looking* medication regimen — named active ingredients with
+exact strengths, dosage forms, routes, and sigs — rather than abstract "roles" and bare
+percentages. Cognee `recall` supplies the live patient context; deterministic clinical logic
+turns that into a safe, fully-specified regimen (this guarantees a sane result even if the LLM
+path is unavailable, and enforces that contraindicated drugs can never appear).
+
+PROTOTYPE / DEMO ONLY — not validated clinical decision support.
+"""
+
 import logging
-import re
 import uuid
 from datetime import datetime, timezone
 
 from cognee import SearchType
 
-from app.services.blocks import (
-    BLOCK_LIBRARY,
-    block_meta,
-    contraindicated_blocks,
-    dose_limits,
-    matched_rules,
-    rule_based_formulation,
-)
+from app.services import blocks
 from app.services.cognee_engine import recall_text
 
 logger = logging.getLogger(__name__)
 
-FORMULATION_SYSTEM_PROMPT = """You are a clinical pharmacology assistant for TheraGraph.
-Using ONLY the patient's genomic and clinical graph context, design a personalized therapy as a
-combination of PRE-APPROVED modular building blocks. You must NOT invent a novel molecule.
-Return STRICT JSON only (no prose, no code fences) matching:
-{
-  "indication": string,
-  "modules": [{"component_id": string, "ratio": number}],   // ratios sum to 1.0
-  "contraindications_flagged": [string],
-  "rationale": string
-}
-Allowed component_id values: %s
-""" % ", ".join(BLOCK_LIBRARY.keys())
+# Ask the graph for a clinician-facing pharmacogenomic assessment. The returned prose is used
+# for (a) deterministic trigger detection (we scan it for gene/phenotype tokens) and (b) as
+# supporting narrative. We do NOT ask the LLM to invent the dosing — that is deterministic.
+ASSESSMENT_SYSTEM_PROMPT = """You are a clinical pharmacology assistant.
+Using ONLY the patient's genomic and clinical graph context, summarize the pharmacogenomic
+findings relevant to prescribing: name each gene, its diplotype/genotype, the metabolizer
+phenotype, and which drugs or drug classes must be avoided or dose-adjusted. Mention documented
+allergies. Be concise and factual. Do not invent data that is not in the context."""
 
 
-def _extract_json(text: str) -> dict | None:
-    m = re.search(r"\{.*\}", text, re.DOTALL)
-    if not m:
-        return None
-    try:
-        return json.loads(m.group(0))
-    except json.JSONDecodeError:
-        return None
-
-
-async def generate_formulation(patient_id: str, indication: str) -> dict:
+async def _recall_context(patient_id: str, indication: str) -> list[dict]:
     query = (
-        f"Design the safest modular therapy for: {indication}. "
-        f"Account for the patient's genetic metabolism and contraindications."
+        f"What genetic variants, metabolizer phenotypes, allergies, and drug "
+        f"contraindications are relevant when treating {indication} for this patient?"
     )
     try:
-        results = await recall_text(
+        return await recall_text(
             patient_id,
             query,
-            system_prompt=FORMULATION_SYSTEM_PROMPT,
+            system_prompt=ASSESSMENT_SYSTEM_PROMPT,
             query_type=SearchType.GRAPH_COMPLETION,
             top_k=20,
         )
     except Exception:
-        # Cognee unreachable (e.g. bad API key / quota): fall back to deterministic
-        # composition instead of failing the request outright. Contraindications are
-        # then derived from any recalled context we do have (empty here).
-        logger.warning("recall failed during formulation for %s; using rule-based fallback", patient_id)
-        results = []
-    text = results[0]["text"] if results else ""
-    parsed = _extract_json(text)
+        logger.warning(
+            "recall failed during formulation for %s; using deterministic composition only",
+            patient_id,
+        )
+        return []
 
-    banned = await contraindicated_blocks(patient_id, results)
 
-    if not parsed or "modules" not in parsed:
-        parsed = rule_based_formulation(indication, banned)
+def _dosage_form_summary(modules: list[dict]) -> str:
+    forms = {m["form"] for m in modules}
+    if len(modules) == 1:
+        return f"{modules[0]['form']} ({modules[0]['route']})"
+    if len(forms) == 1:
+        return f"Oral multi-agent regimen ({len(modules)} {next(iter(forms)).lower()}s)"
+    return f"Oral multi-agent regimen ({len(modules)} agents)"
 
-    # Keep only valid, non-contraindicated blocks.
-    parsed["modules"] = [
-        m
-        for m in parsed["modules"]
-        if m["component_id"] not in banned and m["component_id"] in BLOCK_LIBRARY
+
+def _compose_rationale(
+    indication: str,
+    modules: list[dict],
+    risks: list[dict],
+) -> str:
+    """Build a clean, clinician-style rationale from the deterministic decision logic."""
+    lines: list[str] = []
+    lines.append(f"Indication: {indication}.")
+
+    if risks:
+        parts: list[str] = []
+        for r in risks:
+            geno = f" {r['genotype']}" if r.get("genotype") else ""
+            phen = f" ({r['phenotype'].lower()})" if r.get("phenotype") else ""
+            avoid = ", ".join(r["affected"]) if r.get("affected") else "affected agents"
+            parts.append(f"{r['gene']}{geno}{phen}: {avoid} adjusted or excluded")
+        lines.append("Pharmacogenomic assessment — " + "; ".join(parts) + ".")
+    else:
+        lines.append(
+            "Pharmacogenomic assessment — no metabolizer or allergy flags detected in the "
+            "patient graph; standard dosing applied."
+        )
+
+    regimen = "; ".join(
+        f"{m['ingredient']} {m['dose_mg']:g} mg {m['frequency'].lower()}" for m in modules
+    )
+    lines.append(f"Regimen — {regimen}.")
+
+    notes = [m["dose_note"] for m in modules if m.get("dose_note")]
+    if notes:
+        lines.append("Dose adjustments — " + " ".join(notes))
+
+    return "\n\n".join(lines)
+
+
+async def generate_formulation(patient_id: str, indication: str) -> dict:
+    results = await _recall_context(patient_id, indication)
+
+    rules = blocks.matched_rules(results)
+    banned = blocks.banned_blocks(results)
+    limits = blocks.dose_limits(results)
+    risks = blocks.genetic_risks(results)
+    contra_details = blocks.flagged_contraindications(results)
+
+    # Deterministic, fully-dosed composition using real drugs (respecting exclusions).
+    component_ids = [
+        cid for cid in blocks._pick_ids(indication, banned) if cid not in banned
+    ]
+    if not component_ids:
+        component_ids = ["ACETAMINOPHEN"]
+
+    modules = [
+        blocks.build_module(cid, dose_fraction=limits.get(cid)) for cid in component_ids
     ]
 
-    # Pharmacogenomic dose ceilings: cap any block whose ratio exceeds the
-    # patient-specific limit derived from recalled genetics (e.g. TPMT -> 10%).
-    limits = dose_limits(results)
-    for m in parsed["modules"]:
-        ceiling = limits.get(m["component_id"])
-        if ceiling is not None:
-            m["ratio"] = min(m.get("ratio", 0), ceiling)
+    total_daily = sum(m["daily_dose_mg"] for m in modules) or 1.0
+    for m in modules:
+        m["ratio"] = round(m["daily_dose_mg"] / total_daily, 3)
 
-    total = sum(m.get("ratio", 0) for m in parsed["modules"]) or 1.0
-    for m in parsed["modules"]:
-        meta = block_meta(m["component_id"])
-        m["ratio"] = round(m.get("ratio", 0) / total, 3)
-        m["mass_mg"] = round(m["ratio"] * meta["total_dose_mg"], 1)
-        m["name"] = meta.get("name")
-        m["drug_class"] = meta.get("drug_class")
-        m["pathway"] = meta.get("pathway")
-        m["route"] = meta.get("route")
-        m["mechanism"] = meta.get("mechanism")
+    monitoring = blocks.monitoring_plan(component_ids, rules)
 
-    parsed["contraindications_flagged"] = sorted(
-        set(parsed.get("contraindications_flagged", [])) | banned
-    )
-    parsed["safety_notes"] = [rule["reason"] for rule in matched_rules(results)]
-    parsed["patient_id"] = patient_id
-    parsed["formulation_id"] = f"tx_{uuid.uuid4().hex[:8]}_v1"
-    parsed["generated_at"] = datetime.now(timezone.utc)
-    if "indication" not in parsed:
-        parsed["indication"] = indication
-    return parsed
+    formulation = {
+        "patient_id": patient_id,
+        "formulation_id": f"tx_{uuid.uuid4().hex[:8]}_v1",
+        "lot_number": f"LOT-{uuid.uuid4().hex[:6].upper()}",
+        "indication": indication,
+        "dosage_form": _dosage_form_summary(modules),
+        "route": "Oral (PO)",
+        "modules": modules,
+        "total_daily_mg": round(total_daily, 2),
+        "contraindications_flagged": [c["drug"] for c in contra_details],
+        "contraindication_details": contra_details,
+        "genetic_risks": risks,
+        "safety_notes": [r["implication"] for r in rules],
+        "monitoring": monitoring,
+        "rationale": _compose_rationale(indication, modules, risks),
+        "generated_at": datetime.now(timezone.utc),
+    }
+    return formulation
