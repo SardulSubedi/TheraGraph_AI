@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 
 const ANCHORS = [
   { href: "#problem", label: "Problem" },
-  { href: "#insight", label: "Insight" },
   { href: "#lifecycle", label: "Lifecycle" },
+  { href: "#real-world", label: "Real world" },
 ] as const;
 
 export function LandingNav() {
@@ -35,7 +35,7 @@ export function LandingNav() {
           TheraGraph AI
         </Link>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-5">
           {ANCHORS.map((a) => (
             <a
               key={a.href}
@@ -46,10 +46,16 @@ export function LandingNav() {
             </a>
           ))}
           <Link
-            href="/vault"
+            href="/login"
+            className="hidden text-sm font-medium text-text-secondary transition-colors hover:text-text sm:inline"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/signup"
             className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
           >
-            Enter the console
+            Get started
           </Link>
         </div>
       </nav>

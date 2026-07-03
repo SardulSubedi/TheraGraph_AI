@@ -36,15 +36,18 @@ Secrets live in `backend/.env` and `frontend/.env.local` (both gitignored).
 ## Auth
 
 The clinical app sits behind a login gate (Supabase Auth, email/password). Public routes: the
-landing page (`/`) and `/login`. Protected routes (`/vault`, `/patients/*`) redirect to `/login`
-when signed out — enforced by `frontend/proxy.ts` (Next 16's renamed middleware).
+landing page (`/`), `/login`, and `/signup` (self-serve account creation). Protected routes
+(`/vault`, `/patients/*`) redirect to `/login` when signed out — enforced by `frontend/proxy.ts`
+(Next 16's renamed middleware). New users can create their own account at `/signup`.
 
-Demo clinician account (throwaway prototype credentials — not real secrets):
+Demo accounts (throwaway prototype credentials — not real secrets):
 
 ```
-email:    clinician@theragraph.ai
-password: TheraGraph!2026
+email:    demo@gmail.com            email:    clinician@theragraph.ai
+password: Demo123                   password: TheraGraph!2026
 ```
+
+The login form has a one-click "Try the demo" button that fills `demo@gmail.com` / `Demo123`.
 
 ## Status
 

@@ -42,7 +42,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/login" && user) {
+  if ((pathname === "/login" || pathname === "/signup") && user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/vault";
     redirectUrl.search = "";

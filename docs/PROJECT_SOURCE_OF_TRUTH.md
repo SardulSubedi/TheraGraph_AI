@@ -34,6 +34,15 @@ is live (`serve`/`remember`/`recall`/`improve`/`forget` verified end-to-end) and
 The public landing page, the Supabase Auth login gate, and the §6.6 UI/UX polish pass are all **built**.
 See [§2](#2-preflight--known-blockers-do-this-first) and [§2A](#2a-build-status-as-of-the-build-session).
 
+**Latest iteration (this session):** added **self-serve account creation** (`/signup`, Supabase
+`signUp`), a seeded **demo login** (`demo@gmail.com` / `Demo123`), a **redesigned landing page**
+(gradient hero + animated causal-chain graphic + a "How it could be useful in real life" section),
+and a **richer, more visually impressive formulation view** (composition donut, per-module cards
+with drug class / mechanism / route / pathway, pharmacogenomic dose ceilings, and surfaced safety
+notes). See [§6.0](#screen-0--hero-landing---public), [§6.4](#screen-4--synthesis-console),
+[§8.4](#84-formulation-generation), [§11.1](#111-auth-new--605), and the new
+[§18](#18-how-it-could-be-useful-in-real-life).
+
 ---
 
 ## 1. What I changed from the original plan (and why)
@@ -333,15 +342,46 @@ Implementation guidance (don't over-build): scroll reveal via `IntersectionObser
 library; a sticky top nav that turns solid on scroll; smooth-scroll anchor links; keep it fast and
 on-palette (§7). Content is copy-driven, no real patient data appears here (it's public).
 
+**Built this session (redesign):**
+- **Hero** (`components/landing/Hero.tsx`) — gradient headline ("Medical AI that never *forgets a
+  patient*"), a status pill, a subtle dotted-grid + cyan glow backdrop, and a primary **"Get
+  started"** CTA (→ `/signup`) plus "See how it works". A one-line demo-credentials hint
+  (`demo@gmail.com` / `Demo123`) sits under the CTAs.
+- **`CausalChain`** (`components/landing/CausalChain.tsx`) — an on-palette, four-node graphic
+  (`CYP2D6 *4/*4 → Poor metabolizer → Codeine → no analgesia → Contraindicated`) rendered right in
+  the hero. It makes the "multi-hop link that vector RAG loses" concrete before the user scrolls.
+- **`UseCases`** (`components/landing/UseCases.tsx`) — the new **"How it could be useful in real
+  life"** section (anchor `#real-world`), a 5-card grid mirroring §18 (pharmacogenomics-guided
+  prescribing, longitudinal adaptation, regulatory framing, privacy/compliance, graph-vs-RAG).
+- **Nav** (`components/landing/Nav.tsx`) — anchors updated to Problem / Lifecycle / Real world,
+  plus a "Sign in" text link and a "Get started" button (→ `/signup`).
+- **Footer** — dual CTA: "Create your account" (→ `/signup`) + "Sign in" (→ `/login`), keeping the
+  "prototype — not for clinical use" note.
+
 **Screen 0.5 — Login / Auth gate** (`/login`)
 Not everyone should reach patient data, so the Vault and every `/patients/*` route sit behind
 authentication. Use **Supabase Auth** (already have the project + client): email + password sign-in
 for the demo (optionally magic-link). A centered card on the dark canvas: email, password,
 "Sign in", inline error states, and a subtle link back to the landing page. On success → redirect
 to `/vault`. `proxy.ts` (Next 16 middleware) guards protected routes and redirects unauthenticated
-users to `/login`; signed-in users hitting `/login` are bounced to `/vault`. Provide a sign-out
-control in the app shell. For the hackathon, seed one or two demo clinician accounts (documented in
-the README, not committed as plaintext secrets). See §11 for the auth/RLS note.
+users to `/login`; signed-in users hitting `/login` **or `/signup`** are bounced to `/vault`.
+Provide a sign-out control in the app shell. See §11 for the auth/RLS note.
+
+**Self-serve account creation (`/signup`) — built this session.** New visitors can create their own
+clinician account instead of relying on a hardcoded user. `components/auth/SignUpForm.tsx` collects
+name / email / password (+ confirm), calls `signUp()` (`app/lib/auth.ts` → Supabase
+`auth.signUp`), and: (a) if a session comes back, redirects to `next`/`/vault`; (b) if the project
+enforces email confirmation, shows a "check your inbox" notice. `/signup` is public (not guarded by
+`proxy.ts`); a signed-in user visiting it is redirected to `/vault`. The **login form** also carries
+a one-click **"Try the demo"** helper that fills the demo credentials, and a "Create one" link to
+`/signup`.
+
+**Seeded demo login (documented, throwaway):** `demo@gmail.com` / `Demo123`. Seeded directly in
+Postgres the same way as the clinician account (`auth.users` with an `extensions.crypt(..,
+gen_salt('bf'))` password + `email_confirmed_at=now()` + a matching `auth.identities` row, token
+columns backfilled to `''`). Password grant verified against
+`POST /auth/v1/token?grant_type=password` (returns an access token). These are prototype creds, not
+real secrets.
 
 **Screen 1 — Control Vault** (`/vault`, authenticated)
 Two columns. Left: searchable list of patients from Supabase (name + node/vector counts once
@@ -360,9 +400,24 @@ come from a structured `recall` (§8.5). Hover a node → right slide-out panel 
 excerpt. This is the visual "wow".
 
 **Screen 4 — Synthesis Console** (`/patients/[id]/formulation`)
-Three columns: (L) extracted genetic risks & contraindications; (C) the modular formulation ledger
-(each block: name, ratio, mass); (R) the delivery JSON payload in a code block with a
-"Send to Manufacturing Partner" button (demo: copies JSON / shows a toast).
+Three columns: (L) extracted genetic risks & contraindications; (C) the modular formulation ledger;
+(R) the delivery JSON payload in a code block with a "Send to Manufacturing Partner" button (demo:
+copies JSON / shows a toast).
+
+**Enriched ledger (redesigned this session — `components/FormulationLedger.tsx`):** the center
+column now reads like a real compounding spec, not just a ratio table:
+- **Composition donut** — an SVG donut (on-palette cyan family) showing each module's share, with a
+  legend listing module name + percentage and the module count in the center.
+- **Per-module cards** — one card per active block showing the human name, the `component_id`
+  (mono), a **drug-class** badge, the **`mass_mg`**, the **route**, the **mechanism** sentence, and
+  the **pathway**. This is the "visually impressive + useful to a clinician" surface.
+- **Safety filter card** — contraindicated drugs as struck-through rose badges **plus** the plain-
+  language **safety notes** explaining *why* (e.g. "CYP2D6 poor metabolizers cannot convert
+  codeine/tramadol prodrugs…"). These come from the backend `safety_notes` (§8.4).
+- **Clinical rationale** + the **delivery payload** JSON with the "Send to Manufacturing Partner"
+  copy action.
+The module metadata (`name`, `drug_class`, `pathway`, `route`, `mechanism`) and `safety_notes` are
+returned by the backend so the UI stays a thin renderer.
 
 **Screen 5 — Longitudinal Matrix** (`/patients/[id]/timeline`)
 A timeline of observations. A terminal-style input at the bottom: type an observation
@@ -614,8 +669,19 @@ async def generate_formulation(patient_id: str, indication: str) -> dict:
     return parsed
 ```
 
+**Enrichment added this session (respect this):** after the safety filter renormalizes ratios, the
+formulator now (a) applies **pharmacogenomic dose ceilings** — `blocks.dose_limits(recall_results)`
+caps a block's ratio when a matched rule sets a `dose_limit_blocks` ceiling (e.g. TPMT poor
+metabolizer → `MOD_GAMMA_IMMUNO ≤ 0.1`), before renormalizing; (b) attaches per-module display
+metadata from `BLOCK_LIBRARY` (`name`, `drug_class`, `pathway`, `route`, `mechanism`); and (c) adds
+a top-level **`safety_notes`** list (the `reason` string from each matched `CONTRA_RULE`) so the UI
+can explain *why* something was flagged. `contraindications_flagged` and the hard exclusion of
+banned blocks are unchanged — a contraindicated block still can never appear.
+
 The final formulation JSON (the "delivery payload" sent to a CDMO/compounding partner) has this
-shape — this is the contract the frontend and any partner integration rely on:
+shape — this is the contract the frontend and any partner integration rely on (module objects now
+also carry the optional `name`/`drug_class`/`pathway`/`route`/`mechanism` display fields, and the
+top level carries `safety_notes`):
 
 ```json
 {
@@ -806,6 +872,13 @@ Goal: anticoagulation with genotype-guided low starting dose.
 `app/services/blocks.py` — the pre-approved building blocks and the deterministic safety rules.
 Keep it small but coherent. This is fiction-for-demo but internally consistent.
 
+> **Updated this session:** each `BLOCK_LIBRARY` entry now also carries `drug_class`, `route`, and a
+> `mechanism` sentence (for the enriched Synthesis UI, §6.4), and each `CONTRA_RULES` entry carries a
+> `reason` string (surfaced as `safety_notes`). New helpers: `block_meta(component_id)`,
+> `matched_rules(recall_results)`, and `dose_limits(recall_results)` (ratio ceilings from
+> `dose_limit_blocks`). The `BLOCK_LIBRARY` keys, `total_dose_mg`, and `pathway` are unchanged, and
+> the safety semantics (banned drugs/blocks) are identical — this is additive metadata.
+
 ```python
 BLOCK_LIBRARY = {
     "MOD_ALPHA_BASE":     {"name": "Non-opioid analgesic base",        "total_dose_mg": 450,
@@ -917,17 +990,25 @@ The login gate uses **Supabase Auth** (email/password) so patient data is not pu
 This is auth for *accessing the app*, distinct from the "demo clinician" idea it replaces.
 
 **Status: built + verified this session.**
-- Email provider is usable; a **demo clinician** user is seeded: `clinician@theragraph.ai` /
-  `TheraGraph!2026` (throwaway prototype creds, documented in the README — not real secrets). It was
-  created directly in Postgres (`auth.users` with a bcrypt password via `extensions.crypt(...,
-  gen_salt('bf'))` + `email_confirmed_at=now()` + a matching `auth.identities` row); token columns
-  were backfilled to `''` to avoid the GoTrue "Database error querying schema" on sign-in. Password
-  grant verified: `POST /auth/v1/token?grant_type=password` returns an access token.
+- Email provider is usable; two seeded users exist (throwaway prototype creds, documented in the
+  README — not real secrets):
+  - **Primary demo login:** `demo@gmail.com` / `Demo123` (seeded this session).
+  - **Clinician:** `clinician@theragraph.ai` / `TheraGraph!2026`.
+  Both were created directly in Postgres (`auth.users` with a bcrypt password via
+  `extensions.crypt(..., gen_salt('bf'))` + `email_confirmed_at=now()` + a matching
+  `auth.identities` row); token columns were backfilled to `''` to avoid the GoTrue "Database error
+  querying schema" on sign-in. Password grant verified for `demo@gmail.com`:
+  `POST /auth/v1/token?grant_type=password` returns an access token.
+- **Self-serve sign-up (new):** `/signup` (`components/auth/SignUpForm.tsx`) calls `signUp()`
+  (`app/lib/auth.ts` → Supabase `auth.signUp`). Redirects to `/vault` when a session is returned, or
+  shows a "confirm your email" notice when the project enforces confirmation. The login form fills
+  the demo creds on one click and links to `/signup`.
 - Frontend: `@supabase/ssr` provides browser (`getBrowserClient`) + server (`createServerClient`)
   clients; `frontend/proxy.ts` (Next 16 renamed middleware) reads the session cookie and redirects
   unauthenticated `/vault` and `/patients/*` requests to `/login?next=<path>`; a signed-in user
-  hitting `/login` is bounced to `/vault`. Verified via curl: `/` 200, `/login` 200, unauth `/vault`
-  → 307 `/login?next=%2Fvault`. Sign-out control is in the app shell (`SignOutButton`).
+  hitting `/login` **or `/signup`** is bounced to `/vault`. Verified via curl: `/` 200, `/login` 200,
+  unauth `/vault` → 307 `/login?next=%2Fvault`. Sign-out control is in the app shell
+  (`SignOutButton`).
 - **RLS caveat:** for the hackathon, table RLS stays permissive (the backend uses the anon key and
   is the trusted caller; auth is enforced at the app/route layer, not per-row). This is acceptable
   for the prototype only. **Production** would require: RLS on all tables, the backend using the
@@ -1116,4 +1197,44 @@ Legend: [x] done · [~] partial / blocked · [ ] not started.
 - [x] UI/UX polish pass (§6.6): skeletons, empty states, toasts, graph legend + "DEMO DATA" marker, ratio viz, shared primitives.
 - [x] `COGNEE_API_KEY` is a real Cloud API key (Blocker A resolved) and §12.1 re-verified.
 - [~] Submission README ✅ current; demo/backup video not yet recorded.
+- [x] Self-serve account creation (`/signup`) built; demo login `demo@gmail.com` / `Demo123` seeded + verified.
+- [x] Landing page redesign (gradient hero + causal-chain graphic + "real world" use-cases section).
+- [x] Enriched formulation view (composition donut + per-module mechanism cards + dose ceilings + safety notes).
+
+---
+
+## 18. How it could be useful in real life
+
+This is a **credible direction, not a production clinical system**. Real-world value would come from
+five reinforcing places — this is the honest framing to give judges or stakeholders (and the copy
+that drives the landing page's "Real world" section, §6.0 `UseCases`).
+
+**1. Pharmacogenomics-guided prescribing.** Many adverse drug reactions come from genetic variation
+(CYP2D6, TPMT, CYP2C9, VKORC1, etc.). A system that remembers a patient's genotype and links it to
+drug metabolism could help avoid:
+- Ineffective prodrugs (e.g. codeine in poor CYP2D6 metabolizers).
+- Toxic accumulation (e.g. thiopurines in TPMT-deficient patients).
+- Bleeding risk (e.g. warfarin in CYP2C9/VKORC1-sensitive patients).
+
+These three cases are exactly what the demo's `CONTRA_RULES` + `dose_limit_blocks` encode (§10).
+
+**2. Longitudinal adaptation.** As patients report outcomes, the graph improves over time — closer
+to how real care works than a one-shot LLM consult. (Maps to the feedback loop → `remember`/
+`improve`, §9.)
+
+**3. Regulatory framing (modular compounding).** The product doesn't invent new molecules. It
+outputs a **structured spec** (modules, ratios, masses) for a compounding pharmacy or CDMO — a
+plausible path as personalized-therapeutics regulation evolves. (This is the delivery payload, §8.4.)
+
+**4. Privacy and compliance.** `forget` maps to the **right to be forgotten** / data deletion —
+important for HIPAA and similar regimes. (Delete patient → `forget_patient`, §9.)
+
+**5. Why graph memory beats chunk RAG here.** Medical decisions often need **multi-hop reasoning**
+(variant → enzyme → drug → outcome). A knowledge graph preserves those links across sessions; vector
+RAG can miss them when facts sit in different chunks. (The hero's `CausalChain` graphic dramatizes
+exactly this, §6.0.)
+
+> Honesty guardrail: keep saying "prototype / not for clinical use." The value proposition above is
+> a *direction*, and the safety filter is deterministic-demo logic — not validated clinical decision
+> support.
 ```

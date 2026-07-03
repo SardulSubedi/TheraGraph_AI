@@ -16,6 +16,11 @@ export interface Module {
   component_id: string;
   ratio: number;
   mass_mg?: number | null;
+  name?: string | null;
+  drug_class?: string | null;
+  pathway?: string | null;
+  route?: string | null;
+  mechanism?: string | null;
 }
 
 export interface Formulation {
@@ -24,6 +29,7 @@ export interface Formulation {
   indication: string;
   modules: Module[];
   contraindications_flagged: string[];
+  safety_notes?: string[];
   rationale: string;
   generated_at: string;
 }

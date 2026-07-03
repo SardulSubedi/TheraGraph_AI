@@ -6,7 +6,14 @@ from datetime import datetime, timezone
 
 from cognee import SearchType
 
-from app.services.blocks import BLOCK_LIBRARY, contraindicated_blocks, rule_based_formulation
+from app.services.blocks import (
+    BLOCK_LIBRARY,
+    block_meta,
+    contraindicated_blocks,
+    dose_limits,
+    matched_rules,
+    rule_based_formulation,
+)
 from app.services.cognee_engine import recall_text
 
 logger = logging.getLogger(__name__)
@@ -62,20 +69,36 @@ async def generate_formulation(patient_id: str, indication: str) -> dict:
     if not parsed or "modules" not in parsed:
         parsed = rule_based_formulation(indication, banned)
 
+    # Keep only valid, non-contraindicated blocks.
     parsed["modules"] = [
         m
         for m in parsed["modules"]
         if m["component_id"] not in banned and m["component_id"] in BLOCK_LIBRARY
     ]
+
+    # Pharmacogenomic dose ceilings: cap any block whose ratio exceeds the
+    # patient-specific limit derived from recalled genetics (e.g. TPMT -> 10%).
+    limits = dose_limits(results)
+    for m in parsed["modules"]:
+        ceiling = limits.get(m["component_id"])
+        if ceiling is not None:
+            m["ratio"] = min(m.get("ratio", 0), ceiling)
+
     total = sum(m.get("ratio", 0) for m in parsed["modules"]) or 1.0
     for m in parsed["modules"]:
+        meta = block_meta(m["component_id"])
         m["ratio"] = round(m.get("ratio", 0) / total, 3)
-        m["mass_mg"] = round(
-            m["ratio"] * BLOCK_LIBRARY[m["component_id"]]["total_dose_mg"], 1
-        )
+        m["mass_mg"] = round(m["ratio"] * meta["total_dose_mg"], 1)
+        m["name"] = meta.get("name")
+        m["drug_class"] = meta.get("drug_class")
+        m["pathway"] = meta.get("pathway")
+        m["route"] = meta.get("route")
+        m["mechanism"] = meta.get("mechanism")
+
     parsed["contraindications_flagged"] = sorted(
         set(parsed.get("contraindications_flagged", [])) | banned
     )
+    parsed["safety_notes"] = [rule["reason"] for rule in matched_rules(results)]
     parsed["patient_id"] = patient_id
     parsed["formulation_id"] = f"tx_{uuid.uuid4().hex[:8]}_v1"
     parsed["generated_at"] = datetime.now(timezone.utc)

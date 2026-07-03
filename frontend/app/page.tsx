@@ -2,6 +2,7 @@ import { LandingNav } from "@/app/components/landing/Nav";
 import { Hero } from "@/app/components/landing/Hero";
 import { Section } from "@/app/components/landing/Section";
 import { LifecycleSection } from "@/app/components/landing/LifecycleSection";
+import { UseCases } from "@/app/components/landing/UseCases";
 import { Footer } from "@/app/components/landing/Footer";
 
 export default function HomePage() {
@@ -56,6 +57,8 @@ export default function HomePage() {
         </Section>
 
         <LifecycleSection />
+
+        <UseCases />
 
         <Section
           id="regulatory"

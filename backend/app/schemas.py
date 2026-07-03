@@ -34,6 +34,11 @@ class Module(BaseModel):
     component_id: str
     ratio: float
     mass_mg: float | None = None
+    name: str | None = None
+    drug_class: str | None = None
+    pathway: str | None = None
+    route: str | None = None
+    mechanism: str | None = None
 
 
 class Formulation(BaseModel):
@@ -42,5 +47,6 @@ class Formulation(BaseModel):
     indication: str
     modules: list[Module]
     contraindications_flagged: list[str]
+    safety_notes: list[str] = []
     rationale: str
     generated_at: datetime
