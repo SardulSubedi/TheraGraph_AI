@@ -1,3 +1,21 @@
-Patient: Daniel Reyes, DOB 1985-08-02, MRN DR-2210.
-Condition: autoimmune (IBD) requiring immunomodulation.
-Goal: immunomodulatory therapy with thiopurine-class dosing adjusted for TPMT deficiency.
+Patient: Daniel Reyes, DOB 1985-08-02, MRN DR-2210, Sex M.
+Primary diagnosis: Crohn's disease (ileocolonic, moderate activity); autoimmune IBD requiring immunomodulation.
+
+Disease course: Diagnosed 2019. Failed mesalamine monotherapy. Partial response to budesonide; steroid-dependent flares. Biologics deferred (insurance / patient preference for oral step-up).
+
+Prior treatments:
+  - Prednisone 40 mg taper (2024 flare): remission induction only; recurrence on taper.
+  - Infliximab considered but not started.
+
+Current medications: Multivitamin only.
+Allergies: NKDA.
+
+Relevant labs (2026-01):
+  Hemoglobin 13.8 g/dL, WBC 6.2 K/uL, platelets 245 K/uL — baseline CBC before thiopurine.
+  ALT 28 U/L, albumin 3.9 g/dL. Fecal calprotectin 420 mcg/g (elevated).
+
+Social: Software engineer. Non-smoker. No alcohol.
+
+Goal: Immunomodulatory therapy with thiopurine-class agent (azathioprine) at TPMT-adjusted dose with PPI gastroprotection and intensive CBC monitoring.
+
+Clinical note: TPMT *3A/*3A confirmed on two separate extractions. Standard azathioprine 2–2.5 mg/kg/day would be unsafe — start ~10% of target and titrate with labs.

@@ -1,4 +1,19 @@
 #SAMPLE=AISHA_KARIM
-GENE=CYP2C9  DIPLOTYPE=*2/*3  PHENOTYPE=Poor Metabolizer
-GENE=VKORC1  rs9923231=AA      PHENOTYPE=High warfarin sensitivity
-NOTE: CYP2C9 *2/*3 + VKORC1 AA -> markedly reduced warfarin dose requirement; bleeding risk at standard dose.
+#SOURCE=TheraGraph mock pharmacogenomics panel (demo only — not a clinical report)
+
+GENE=CYP2C9  DIPLOTYPE=*2/*3   PHENOTYPE=Poor Metabolizer   ACTIVITY=~30% of normal
+GENE=VKORC1  rs9923231=AA      PHENOTYPE=High warfarin sensitivity (–1639 G>A homozygous)
+GENE=CYP4F2  rs2108622=*1/*3   PHENOTYPE=Slightly reduced vitamin K metabolism (minor warfarin effect)
+GENE=CYP2D6  DIPLOTYPE=*1/*1   PHENOTYPE=Normal Metabolizer
+
+WARFARIN_SENSITIVITY:
+  Combined CYP2C9 *2/*3 + VKORC1 AA -> markedly reduced warfarin dose requirement.
+  Estimated stable dose ~2–3 mg/day (vs 5 mg standard); bleeding risk at standard 5 mg starting dose.
+  CPIC recommendation: lower initiation dose, frequent INR monitoring, or consider DOAC.
+
+DRUG_OPTIONS:
+  WARFARIN   -> DOSE-LIMIT (~35% of standard); INR-guided; high bleeding risk if standard dose used
+  APIXABAN  -> alternative (fixed dosing; not CYP2C9/VKORC1 dependent) — acceptable if no mechanical valve
+  STANDARD_WARFARIN_DOSE -> avoid without genotype adjustment
+
+NOTE: CYP2C9 *2/*3 + VKORC1 AA -> markedly reduced warfarin clearance and lower dose requirement; bleeding risk at standard dose. Prior literature: mean stable dose ~2.1 mg/day for this diplotype combination.

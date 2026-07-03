@@ -1,3 +1,19 @@
 #SAMPLE=DANIEL_REYES
-GENE=TPMT  DIPLOTYPE=*3A/*3A  PHENOTYPE=Poor Metabolizer (low activity)
-NOTE: TPMT poor metabolizers accumulate toxic thiopurine metabolites -> severe myelosuppression at standard doses. Requires drastic dose reduction.
+#SOURCE=TheraGraph mock pharmacogenomics panel (demo only — not a clinical report)
+
+GENE=TPMT    DIPLOTYPE=*3A/*3A   PHENOTYPE=Poor Metabolizer (low activity)   ACTIVITY=~10% of normal
+GENE=NUDT15  DIPLOTYPE=*1/*1     PHENOTYPE=Normal (no additional thiopurine toxicity risk from NUDT15)
+GENE=CYP2D6  DIPLOTYPE=*1/*2     PHENOTYPE=Intermediate Metabolizer
+GENE=UGT1A1 rs8175347=*1/*1    PHENOTYPE=Normal bilirubin glucuronidation
+
+DRUG_METABOLISM:
+  AZATHIOPRINE  -> DOSE-LIMIT REQUIRED (TPMT PM: cap at ~10% of standard; severe myelosuppression risk)
+  MERCAPTOPURINE -> DOSE-LIMIT REQUIRED (same TPMT pathway)
+  THIOGUANINE   -> DOSE-LIMIT REQUIRED (same TPMT pathway)
+  STANDARD_THIOPURINE_DOSE -> CONTRAINDICATED at full dose
+
+IBD_PHARMACOGENOMICS:
+  TPMT testing mandatory before thiopurine initiation per CPIC guidelines.
+  Monitor CBC + LFTs weekly × 4, then every 2–4 weeks during titration.
+
+NOTE: TPMT poor metabolizers accumulate toxic thiopurine metabolites (6-TGN) -> severe myelosuppression, pancytopenia at standard doses. Requires drastic dose reduction and close hematologic monitoring.

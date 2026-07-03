@@ -1,3 +1,24 @@
-Patient: Aisha Karim, DOB 1978-11-30, MRN AK-9982.
-Condition: needs anticoagulation (atrial fibrillation).
-Goal: anticoagulation with genotype-guided low starting dose.
+Patient: Aisha Karim, DOB 1978-11-30, MRN AK-9982, Sex F.
+Primary diagnosis: Non-valvular atrial fibrillation (persistent); CHA₂DS₂-VASc score 4 (age, hypertension, diabetes).
+
+Anticoagulation indication: Stroke prevention. No mechanical heart valve. No severe renal impairment (eGFR 72 mL/min).
+
+Cardiovascular history:
+  - Hypertension (controlled on lisinopril 10 mg daily).
+  - Type 2 diabetes (metformin 1000 mg BID; HbA1c 7.1%).
+  - No prior GI bleed or intracranial hemorrhage.
+
+Prior anticoagulation:
+  - Rivaroxaban 20 mg daily (2023): discontinued after patient-reported easy bruising; not genotype-guided at time.
+
+Current medications: Lisinopril 10 mg PO daily, Metformin 1000 mg PO BID.
+Allergies: NKDA.
+
+Relevant labs (2026-02):
+  INR not on anticoagulant currently. Creatinine 0.9 mg/dL, eGFR 72. Liver panel normal.
+
+Social: Retired teacher. Lives independently. Falls risk: low (TUG normal).
+
+Goal: Anticoagulation with genotype-guided low warfarin starting dose OR discussion of apixaban as CYP2C9/VKORC1-independent alternative. If warfarin chosen: target INR 2.0–3.0, start ~2 mg/day with INR at 48–72 h.
+
+Clinical note: Pharmacogenomic panel confirms high warfarin sensitivity. Standard 5 mg initiation historically associated with supratherapeutic INR and bleeding in similar genotypes.

@@ -1,5 +1,22 @@
-Patient: Maya Okafor, DOB 1991-03-14, MRN MO-4471.
-Chief complaint: chronic inflammatory joint pain (rheumatoid-type), moderate-severe.
-History: prior codeine prescription gave NO pain relief and caused nausea. NSAID-tolerant.
-Current meds: none. Allergies: sulfonamides.
-Goal: effective non-opioid-prodrug analgesia + anti-inflammatory therapy.
+Patient: Maya Okafor, DOB 1991-03-14, MRN MO-4471, Sex F.
+Primary diagnosis: Seropositive rheumatoid arthritis (moderate–severe activity); chronic inflammatory joint pain.
+
+Presenting complaint: Bilateral hand/wrist and knee pain, morning stiffness >60 min, functional decline over 18 months.
+
+Past medication trials:
+  - Codeine 30 mg q6h (2024): NO analgesic effect; significant nausea and dizziness — consistent with CYP2D6 poor metabolism.
+  - Ibuprofen 600 mg TID: partial relief; tolerated without GI bleed.
+  - Naproxen 500 mg BID (2 weeks): good anti-inflammatory response; stopped for insurance gap.
+
+Current medications: None.
+Allergies: Sulfonamides (documented rash/urticaria to TMP-SMX); NKDA otherwise.
+
+Relevant labs (2025-11):
+  CRP 18 mg/L (elevated), ESR 42 mm/hr, RF positive, anti-CCP positive.
+  ALT 22 U/L, AST 19 U/L, creatinine 0.8 mg/dL — renal/hepatic function adequate for NSAID + acetaminophen.
+
+Social: Non-smoker. Occasional alcohol (≤2 drinks/week). Works as graphic designer; needs hand dexterity for work.
+
+Family history: Mother — osteoarthritis. No known familial bleeding or thrombotic disorders.
+
+Goal: Effective non-opioid, non-prodrug analgesia + anti-inflammatory therapy with pharmacogenomic safety (avoid CYP2D6 prodrugs and sulfonamide-class NSAIDs).
