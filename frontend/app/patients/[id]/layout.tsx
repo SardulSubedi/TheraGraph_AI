@@ -32,7 +32,16 @@ export default async function PatientLayout({
       <header className="border-b border-border bg-surface px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <PatientScreenLabel patientName={patient.name} />
-          <SignOutButton />
+          <div className="flex items-center gap-3">
+            <span
+              className="hidden items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-700 sm:inline-flex"
+              title="This is a research prototype. Outputs are illustrative and must not be used for real prescribing or treatment decisions."
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden />
+              Prototype — not for clinical use
+            </span>
+            <SignOutButton />
+          </div>
         </div>
         <div className="mt-3">
           <PatientNav patientId={id} />

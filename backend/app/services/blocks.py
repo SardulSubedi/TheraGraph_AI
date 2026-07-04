@@ -177,6 +177,14 @@ BLOCK_LIBRARY: dict[str, dict] = {
 #   avoid_blocks   library component_ids to hard-exclude from the regimen
 #   dose_limit_blocks  {component_id: fraction-of-standard-dose}  (reduce, don't exclude)
 #   alternative    optional safer alternative to suggest
+#   evidence_level guideline strength (e.g. "CPIC Level A") — grounds the finding in a real source
+#   guideline      short citation of the governing clinical guideline
+#   source         curating body (PharmGKB / CPIC / FDA label)
+#
+# Evidence levels use CPIC's A–D scale where applicable. Level A = prescribing action strongly
+# recommended; allergy/label rules cite the FDA label instead of a CPIC level. This mirrors how a
+# real clinical-decision-support system grades the strength of each recommendation instead of
+# presenting every flag as equally certain.
 # --------------------------------------------------------------------------------------
 CONTRA_RULES: list[dict] = [
     {
@@ -191,6 +199,9 @@ CONTRA_RULES: list[dict] = [
         "avoid_drugs": ["Codeine", "Tramadol"],
         "avoid_blocks": [],
         "alternative": "Use non-prodrug analgesics (acetaminophen, an NSAID, or duloxetine).",
+        "evidence_level": "CPIC Level A",
+        "guideline": "CPIC Guideline for Codeine and CYP2D6 (2021 update)",
+        "source": "PharmGKB / CPIC",
     },
     {
         "trigger": ["sulfonamide"],
@@ -201,6 +212,9 @@ CONTRA_RULES: list[dict] = [
         "avoid_drugs": ["Sulfamethoxazole"],
         "avoid_blocks": ["CELECOXIB"],
         "alternative": "Use a non-sulfonamide NSAID (naproxen) for the anti-inflammatory component.",
+        "evidence_level": "Allergy — label contraindication",
+        "guideline": "FDA celecoxib label: contraindicated in sulfonamide allergy",
+        "source": "FDA labeling",
     },
     {
         "trigger": ["TPMT", "Poor Metabolizer"],
@@ -214,6 +228,9 @@ CONTRA_RULES: list[dict] = [
         "avoid_drugs": [],
         "dose_limit_blocks": {"AZATHIOPRINE": 0.1},
         "alternative": "Start azathioprine at ~10% of standard with close CBC monitoring.",
+        "evidence_level": "CPIC Level A",
+        "guideline": "CPIC Guideline for Thiopurines and TPMT/NUDT15 (2018 update)",
+        "source": "PharmGKB / CPIC",
     },
     {
         "trigger": ["CYP2C9", "Poor Metabolizer"],
@@ -227,8 +244,149 @@ CONTRA_RULES: list[dict] = [
         "avoid_drugs": [],
         "dose_limit_blocks": {"WARFARIN": 0.35},
         "alternative": "Consider a direct oral anticoagulant (apixaban), which is not CYP2C9/VKORC1-dose-dependent.",
+        "evidence_level": "CPIC Level A",
+        "guideline": "CPIC Guideline for Warfarin and CYP2C9/VKORC1/CYP4F2 (2017 update)",
+        "source": "PharmGKB / CPIC",
+    },
+    {
+        # Lower-evidence finding for Maya — demonstrates that not every flag is actionable.
+        "trigger": ["COMT", "Val/Val"],
+        "gene": "COMT",
+        "phenotype": "High COMT activity (Val/Val)",
+        "implication": (
+            "Higher catechol-O-methyltransferase activity is associated with somewhat lower "
+            "endogenous opioid tone and may modestly reduce response to some analgesics. Evidence "
+            "is limited and not prescribing-actionable on its own."
+        ),
+        "severity": "info",
+        "avoid_drugs": [],
+        "avoid_blocks": [],
+        "alternative": "No dose change; note when interpreting analgesic response.",
+        "evidence_level": "Emerging / limited evidence",
+        "guideline": "Pain-pharmacogenetics literature (not a CPIC prescribing guideline)",
+        "source": "PharmGKB (research-level)",
+    },
+    # --- Latent knowledge-base rules (real CPIC pairs). Triggers are [gene, risk-phenotype] so
+    # --- they fire ONLY for a patient whose graph describes that gene with the actionable
+    # --- phenotype nearby (proximity-matched) — never on gene name alone. None of the demo
+    # --- patients carry these genotypes, so they stay dormant unless real data warrants them.
+    {
+        "trigger": ["CYP2C19", "Poor Metabolizer"],
+        "gene": "CYP2C19",
+        "phenotype": "Poor metabolizer",
+        "implication": (
+            "Reduced conversion of clopidogrel to its active metabolite — diminished platelet "
+            "inhibition and higher risk of cardiovascular events after stenting/ACS."
+        ),
+        "severity": "high",
+        "avoid_drugs": ["Clopidogrel"],
+        "avoid_blocks": [],
+        "alternative": "Prefer prasugrel or ticagrelor (not CYP2C19-dependent) where appropriate.",
+        "evidence_level": "CPIC Level A",
+        "guideline": "CPIC Guideline for Clopidogrel and CYP2C19 (2022 update)",
+        "source": "PharmGKB / CPIC",
+    },
+    {
+        "trigger": ["DPYD", "Poor Metabolizer"],
+        "gene": "DPYD",
+        "phenotype": "DPD deficiency (poor metabolizer)",
+        "implication": (
+            "Reduced dihydropyrimidine dehydrogenase activity causes severe fluoropyrimidine "
+            "toxicity (5-fluorouracil, capecitabine) at standard doses."
+        ),
+        "severity": "high",
+        "avoid_drugs": ["Fluorouracil", "Capecitabine"],
+        "avoid_blocks": [],
+        "alternative": "Reduce fluoropyrimidine dose per activity score or use a non-fluoropyrimidine regimen.",
+        "evidence_level": "CPIC Level A",
+        "guideline": "CPIC Guideline for Fluoropyrimidines and DPYD (2017 update)",
+        "source": "PharmGKB / CPIC",
+    },
+    {
+        "trigger": ["SLCO1B1", "Decreased Function"],
+        "gene": "SLCO1B1",
+        "phenotype": "Decreased transporter function",
+        "implication": (
+            "Reduced hepatic uptake of statins raises systemic exposure and simvastatin-associated "
+            "myopathy risk."
+        ),
+        "severity": "moderate",
+        "avoid_drugs": [],
+        "avoid_blocks": [],
+        "alternative": "Limit simvastatin dose or use a lower-risk statin (rosuvastatin/pravastatin).",
+        "evidence_level": "CPIC Level A",
+        "guideline": "CPIC Guideline for Statins and SLCO1B1/ABCG2/CYP2C9 (2022 update)",
+        "source": "PharmGKB / CPIC",
     },
 ]
+
+
+# --------------------------------------------------------------------------------------
+# Drug–drug interactions among library agents (and common flagged drugs).
+#
+# Keyed by a frozenset of two component_ids OR drug names. A real regimen builder screens the
+# assembled agents against each other, not just against the genome — this catches the additive
+# bleeding risk that motivates gastroprotection, anticoagulant duplication, etc.
+#
+# severity: major | moderate | minor
+# --------------------------------------------------------------------------------------
+DRUG_INTERACTIONS: list[dict] = [
+    {
+        "pair": ["NAPROXEN", "DULOXETINE"],
+        "severity": "moderate",
+        "mechanism": "Additive antiplatelet / GI mucosal effects (NSAID + SNRI).",
+        "effect": "Increased risk of GI and other bleeding.",
+        "management": "Co-prescribe a PPI, use the lowest effective NSAID dose, and counsel on bleeding signs.",
+    },
+    {
+        "pair": ["NAPROXEN", "WARFARIN"],
+        "severity": "major",
+        "mechanism": "NSAID antiplatelet effect + GI irritation on top of anticoagulation.",
+        "effect": "Substantially increased major-bleeding risk.",
+        "management": "Avoid the combination if possible; if unavoidable, add gastroprotection and monitor closely.",
+    },
+    {
+        "pair": ["DULOXETINE", "WARFARIN"],
+        "severity": "moderate",
+        "mechanism": "Serotonergic antiplatelet effect adds to anticoagulation.",
+        "effect": "Increased bleeding risk; possible INR fluctuation.",
+        "management": "Monitor INR and for bleeding when starting or stopping duloxetine.",
+    },
+    {
+        "pair": ["WARFARIN", "APIXABAN"],
+        "severity": "major",
+        "mechanism": "Two anticoagulants with overlapping effect.",
+        "effect": "Additive anticoagulation — high bleeding risk; therapeutic duplication.",
+        "management": "Do not combine; select a single anticoagulant with a defined transition plan.",
+    },
+    {
+        "pair": ["AZATHIOPRINE", "WARFARIN"],
+        "severity": "minor",
+        "mechanism": "Azathioprine can reduce the anticoagulant effect of warfarin.",
+        "effect": "Possible reduced INR / warfarin efficacy.",
+        "management": "Monitor INR and adjust warfarin dose if azathioprine is started or stopped.",
+    },
+]
+
+
+def interactions_for(component_ids: list[str]) -> list[dict]:
+    """Return curated interactions that apply to a set of chosen component_ids."""
+    chosen = set(component_ids)
+    out: list[dict] = []
+    for entry in DRUG_INTERACTIONS:
+        a, b = entry["pair"]
+        if a in chosen and b in chosen:
+            out.append(
+                {
+                    "drug_a": BLOCK_LIBRARY.get(a, {}).get("name", a),
+                    "drug_b": BLOCK_LIBRARY.get(b, {}).get("name", b),
+                    "severity": entry["severity"],
+                    "mechanism": entry["mechanism"],
+                    "effect": entry["effect"],
+                    "management": entry["management"],
+                }
+            )
+    return out
 
 
 def block_meta(component_id: str) -> dict:
@@ -240,14 +398,72 @@ def _corpus(recall_results: list[dict]) -> str:
     return " ".join(r.get("text", "") for r in recall_results)
 
 
+# Forward proximity window (characters) for multi-token triggers: how far *after* a gene anchor
+# we look for its risk phenotype. Kept short and forward-only because both structured genome
+# lines ("GENE=CYP2D6 ... PHENOTYPE=Poor Metabolizer") and prose recall ("CYP2D6 is a poor
+# metabolizer") place the phenotype right after the gene name.
+_TRIGGER_FORWARD_WINDOW = 90
+
+# Gene / marker vocabulary used to bound a gene's segment at the *next* gene mention, so a
+# neighboring gene's phenotype can't leak into this one's match window.
+_GENE_VOCAB = sorted(
+    {r["gene"].upper() for r in CONTRA_RULES if r["gene"] not in ("Allergy",)}
+    | {"VKORC1", "NUDT15", "CYP4F2", "HLA-B", "G6PD", "UGT1A1", "IFNL3"}
+)
+
+
+def _next_gene_cut(corpus_upper: str, after: int, hard_limit: int) -> int:
+    """Position of the next gene mention after `after`, capped at `hard_limit`.
+
+    Bounds a gene's phenotype-search segment so an adjacent gene's phenotype can't leak in.
+    """
+    cut = hard_limit
+    for gene in _GENE_VOCAB:
+        pos = corpus_upper.find(gene, after)
+        if pos != -1:
+            cut = min(cut, pos)
+    return cut
+
+
+def _trigger_matches(corpus_upper: str, tokens: list[str]) -> bool:
+    """Proximity-aware trigger match.
+
+    Single-token triggers match on presence anywhere. Multi-token triggers treat the FIRST token
+    as an anchor (the gene / allergen) and require the remaining tokens to appear in the forward
+    segment that runs from the anchor to the next gene mention (or `_TRIGGER_FORWARD_WINDOW`
+    chars, whichever is closer).
+
+    This prevents cross-gene false positives: a patient who is CYP2D6 "Poor Metabolizer" but
+    CYP2C9 *1/*1 must NOT trip the CYP2C9 rule just because "CYP2C9" and "Poor Metabolizer" both
+    appear somewhere in the same multi-gene report. The phenotype has to be attached to *that*
+    gene's record.
+    """
+    toks = [t.upper() for t in tokens]
+    if not toks:
+        return False
+    if len(toks) == 1:
+        return toks[0] in corpus_upper
+
+    anchor, rest = toks[0], toks[1:]
+    start = 0
+    while True:
+        idx = corpus_upper.find(anchor, start)
+        if idx == -1:
+            return False
+        seg_start = idx + len(anchor)
+        seg_end = _next_gene_cut(
+            corpus_upper, seg_start, seg_start + _TRIGGER_FORWARD_WINDOW
+        )
+        segment = corpus_upper[seg_start:seg_end]
+        if all(tok in segment for tok in rest):
+            return True
+        start = seg_start
+
+
 def matched_rules(recall_results: list[dict]) -> list[dict]:
-    """Rules whose trigger tokens are all present in the recalled corpus."""
+    """Rules whose trigger tokens co-occur (proximity-aware) in the recalled corpus."""
     corpus = _corpus(recall_results).upper()
-    return [
-        rule
-        for rule in CONTRA_RULES
-        if all(tok.upper() in corpus for tok in rule["trigger"])
-    ]
+    return [rule for rule in CONTRA_RULES if _trigger_matches(corpus, rule["trigger"])]
 
 
 def banned_blocks(recall_results: list[dict]) -> set[str]:
@@ -319,6 +535,9 @@ def genetic_risks(recall_results: list[dict]) -> list[dict]:
                 "severity": rule.get("severity", "info"),
                 "affected": affected,
                 "recommendation": rule.get("alternative"),
+                "evidence_level": rule.get("evidence_level"),
+                "guideline": rule.get("guideline"),
+                "source": rule.get("source"),
             }
         )
     return findings

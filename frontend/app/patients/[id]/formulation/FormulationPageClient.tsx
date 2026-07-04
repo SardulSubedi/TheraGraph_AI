@@ -6,6 +6,7 @@ import type { Formulation } from "@/app/lib/types";
 import { GeneticRisks } from "@/app/components/formulation/GeneticRisks";
 import { RegimenLedger } from "@/app/components/formulation/RegimenLedger";
 import { ClinicalReport } from "@/app/components/formulation/ClinicalReport";
+import { DrugInteractions } from "@/app/components/formulation/DrugInteractions";
 import { PatientChat } from "@/app/components/formulation/PatientChat";
 import { Card } from "@/app/components/ui/Card";
 import { Skeleton } from "@/app/components/ui/Skeleton";
@@ -97,6 +98,11 @@ export function FormulationPageClient({
 
         <ClinicalReport formulation={formulation} patientName={patientName} />
       </div>
+
+      {formulation?.drug_interactions &&
+        formulation.drug_interactions.length > 0 && (
+          <DrugInteractions interactions={formulation.drug_interactions} />
+        )}
 
       <PatientChat
         patientId={patientId}

@@ -44,6 +44,21 @@ Patient AI chat grounded in Cognee recall); **Timeline redesign**; **enriched mo
 (§10); new **`POST /api/patients/{id}/chat`** endpoint. See [§6.0](#screen-0--hero-landing---public),
 [§6.4](#screen-4--synthesis-console), [§8.4](#84-formulation-generation), [§9](#9-backend-api-fastapi).
 
+**Latest iteration (Jul 2026 clinical-realism + n-of-1 pass) — BUILT + VERIFIED:**
+- **PGx realism**: CPIC-style **evidence levels + guideline citations** on every genetic-risk card;
+  **proximity-matched** contraindication rules (multi-token triggers must co-occur within a forward
+  window of a gene anchor, killing cross-gene false positives — verified Maya no longer mis-fires a
+  CYP2C19/clopidogrel flag); more real PGx rules (COMT, CYP2C19, DPYD, SLCO1B1); a **drug–drug
+  interaction** checker (`DRUG_INTERACTIONS` + `interactions_for`) surfaced in a new
+  `DrugInteractions` panel. Persistent **"Prototype — not for clinical use"** marker in the workspace header.
+- **NEW Screen 6 — Custom Therapy (`Custom Rx` tab)**: an **n-of-1 design agent** that drafts a
+  bespoke therapeutic (ASO / siRNA / mRNA / AAV / base- or prime-edit) for a single patient's
+  molecular defect — not a mix of existing drugs. Recall-grounded reasoning trace, deterministic
+  modality decision tree, illustrative construct + delivery vector, modality safety profile, and an
+  FDA **Plausible Mechanism Framework** regulatory map with an exportable Design Brief. New mock
+  patient **P4 (Leo Martinez, MFSD8 splice → CLN7 Batten)** is the demo hero; P1–P3 honestly return
+  "no n-of-1 target." Full spec in [§19](#19-custom-therapy-design--n-of-1-personalized-therapeutics-screen-6-new).
+
 ---
 
 ## 1. What I changed from the original plan (and why)
@@ -246,8 +261,15 @@ backend/
     │   ├── __init__.py
     │   ├── cognee_engine.py          ← thin wrapper: connect/remember/recall/improve/forget
     │   ├── parser.py                 ← pdf/vcf/txt → clean text
-    │   ├── blocks.py                 ← real generic drug library + PGx safety rules
+    │   ├── blocks.py                 ← real generic drug library + PGx rules (evidence levels) + drug-interaction screen
     │   ├── formulator.py             ← recall context + deterministic regimen builder
+    │   ├── modalities.py             ← n-of-1 modality + delivery-vector knowledge base (§19.4)
+    │   ├── therapy_designer.py       ← n-of-1 custom therapy design agent (§19.3)
+    │   │   # §19.8 proposed drop-ins (not built yet):
+    │   │   # variant_truth.py      ← ClinVar + gnomAD + Ensembl VEP (Tier A)
+    │   │   # sequence_design.py    ← Ensembl window + ViennaRNA + BLAST off-target
+    │   │   # structure_immuno.py   ← ESMFold/AlphaFold DB + NetMHCpan epitope flags
+    │   │   # therapy_tools.py      ← async tool registry + remember tool results to Cognee
     │   └── supabase_client.py        ← supabase-py client + table helpers
     ├── routers/
     │   ├── __init__.py
@@ -255,6 +277,7 @@ backend/
     │   ├── ingest.py                 ← upload → Storage → cognee.remember
     │   ├── graph.py                  ← recall structured nodes/edges for viz
     │   ├── formulate.py              ← generate formulation
+    │   ├── therapy.py                ← n-of-1 custom therapy design (§19.5)
     │   ├── feedback.py               ← remember(observation) + improve
     │   └── chat.py                   ← recall-grounded clinician Q&A
     └── data/
@@ -294,7 +317,8 @@ frontend/
         ├── layout.tsx                ✅ workspace shell w/ breadcrumb + tab nav + sign-out
         ├── intake/page.tsx (+IntakePageClient.tsx)            ✅ Screen 2
         ├── graph/page.tsx (+GraphPageClient.tsx)              ✅ Screen 3
-        ├── formulation/page.tsx (+FormulationPageClient.tsx)  ✅ Screen 4 (+ GeneticRisks / Regimen / Report / Chat)
+        ├── formulation/page.tsx (+FormulationPageClient.tsx)  ✅ Screen 4 (+ GeneticRisks / Regimen / Report / DrugInteractions / Chat)
+        ├── therapy/page.tsx (+TherapyPageClient.tsx)          ✅ Screen 6 — n-of-1 Custom Therapy (§19): TargetBrief / ReasoningTrace / ModalityCard / ConstructDesign / DeliverySafety / RegulatoryPath
         └── timeline/page.tsx                                  ✅ Screen 5
 ```
 
@@ -738,7 +762,8 @@ token check is a production follow-up, not a hackathon requirement.
 | DELETE | `/api/patients/{id}` | — | `{status}` | also calls `forget_patient` (right-to-be-forgotten) |
 | POST | `/api/patients/{id}/ingest` | multipart `files[]` | `{ingested:[{name,status}]}` | Storage upload → parse → `remember` |
 | GET | `/api/patients/{id}/graph` | — | `{nodes, edges}` | structured `recall` (§8.5) |
-| POST | `/api/patients/{id}/formulate` | `{indication}` | `Formulation` | §8.4 — real-drug regimen |
+| POST | `/api/patients/{id}/formulate` | `{indication}` | `Formulation` | §8.4 — real-drug regimen (+ evidence levels, drug-interaction screen) |
+| POST | `/api/patients/{id}/custom-therapy` | `{goal, target_hint?, preferred_modality?}` | `CustomTherapy` | §19 — n-of-1 design agent (separate tab) |
 | POST | `/api/patients/{id}/feedback` | `{observation, ts?}` | `{status, updated}` | `remember` + best-effort `improve` |
 | GET | `/api/patients/{id}/timeline` | — | `FeedbackEntry[]` | from Supabase |
 | POST | `/api/patients/{id}/chat` | `{message, history[], indication?}` | `{reply, grounded}` | §8.4A — recall Q&A |
@@ -913,6 +938,31 @@ goal: genotype-guided warfarin ~2 mg/day or DOAC discussion.
 
 **Expected regimen (indication: anticoagulation for atrial fibrillation):** Warfarin ~2 mg/day with
 dose_note; INR monitoring in plan.
+
+### P4 — Leo Martinez — pediatric monogenic splice variant (n-of-1 HERO, Screen 6)
+
+The demo hero for the **Custom Therapy** tab (§19). A child with a single-gene neurodegenerative
+disease driven by a **deep-intronic splice variant** — the milasen mechanism — so the design agent
+selects a **splice-switching ASO**. (Files are `p4_genome.txt` + `p4_history.txt`, demo/mock only.)
+
+`p4_genome.txt` — `MFSD8` (CLN7) compound-het: one pathogenic null allele + a **deep-intronic
+variant creating a cryptic pseudoexon** (frameshift). Monogenic, autosomal recessive; CNS tissue;
+mechanism = splice defect / loss-of-function. PGx panel otherwise unremarkable (so the *Formulation*
+tab is not the interesting story here — the *Custom Therapy* tab is).
+
+`p4_history.txt` — Early-childhood neurodegeneration (vision loss, seizures, developmental
+regression); enzyme/biomarker and MRI findings; no approved disease-modifying drug; family seeking an
+individualized therapy. Goal: **n-of-1 splice-correcting therapeutic**.
+
+**Expected design (goal: "halt neurodegeneration from the MFSD8 splice variant"):** modality
+`ASO_SPLICE` (2'-MOE phosphorothioate steric-block, ~18–22 nt) to mask the cryptic splice site and
+restore normal MFSD8 splicing; delivery **intrathecal** (CNS); precedent **milasen**; regulatory
+mapping to the FDA **Plausible Mechanism Framework**.
+
+> **Contrast that proves honesty:** running the Custom Therapy agent on P1/P2/P3 returns
+> **"no n-of-1 target identified"** (they have pharmacogenomic issues, not a monogenic driver) and
+> routes the clinician back to the Formulation tab. Running Formulation on P4 still works (standard
+> supportive dosing) but surfaces no PGx flags — the two tabs are complementary, not redundant.
 
 ### Real generic drug library
 
@@ -1200,6 +1250,8 @@ Legend: [x] done · [~] partial / blocked · [ ] not started.
 - [x] Self-serve signup + demo login (`demo@gmail.com` / `Demo123`).
 - [x] Real-drug formulation generation + Export-only JSON + recall-grounded chat (§8.4 / §8.4A).
 - [x] Enriched mock patient genome/history files (§10).
+- [x] **Clinical-realism pass**: CPIC evidence levels + guideline citations on risk cards; proximity-matched PGx rules (no cross-gene false positives); drug–drug interaction checker + `DrugInteractions` panel; persistent "not for clinical use" marker.
+- [x] **n-of-1 Custom Therapy tab (§19)** — modality KB + design agent + `POST /custom-therapy` + `Custom Rx` UI. Build/lint/tsc clean; live-verified P4 (design produced) + P1 (honest no-target). New P4 mock patient (Leo Martinez / MFSD8 splice) ingested.
 
 ---
 
@@ -1236,4 +1288,369 @@ RAG can miss them when facts sit in different chunks. (The demo graph + chat dra
 > Honesty guardrail: keep saying "prototype / not for clinical use." The value proposition above is
 > a *direction*, and the safety filter is deterministic-demo logic — not validated clinical decision
 > support.
+
+---
+
+## 19. Custom Therapy Design — n-of-1 personalized therapeutics (Screen 6, NEW)
+
+This is a **separate tab** from Formulation (Screen 4). Formulation composes a regimen from
+**pre-approved generic drugs**. The Custom Therapy tab does something categorically different: an
+**AI design agent** reads the patient's molecular profile from the Cognee graph and drafts a
+**bespoke, n-of-1 therapeutic candidate** — a custom molecule/construct engineered for *this one
+patient's* specific genetic defect (an antisense oligonucleotide, siRNA, mRNA, AAV gene-transfer
+construct, or CRISPR base/prime edit), not a mixture of existing drugs.
+
+### 19.1 Why this is credible now (grounding, mid-2026)
+
+Real, current precedents anchor the framing (say these to judges):
+- **milasen** (2018) — a splice-switching ASO designed for a single child (Mila) with CLN7 Batten
+  disease (MFSD8 deep-intronic variant); concept-to-dose in ~1 year under an FDA expanded-access
+  protocol (Yu et al., NEJM 2019).
+- **Baby KJ Muldoon** (Feb 2025) — the world's first personalized in-vivo CRISPR base-editing
+  therapy, for CPS1 deficiency (a urea cycle disorder), led by Musunuru & Ahrens-Nicklas (CHOP/Penn).
+- **n-Lorem Foundation** — nonprofit delivering free individualized ASOs for nano-rare patients.
+- **FDA "Plausible Mechanism Framework"** — draft guidance issued **Feb 23, 2026** (Docket
+  FDA-2026-D-1256). Not a new pathway, but a way to assemble *substantial evidence* for
+  individualized genome-editing / RNA therapies when RCTs are infeasible. Criteria: (1) identify the
+  disease-causing abnormality; (2) therapy targets the root cause / proximate pathway; (3)
+  well-characterized natural-history data; (4) confirm target engagement / successful editing;
+  (5) clinical or validated-biomarker outcome. The design agent's Regulatory panel maps its output
+  onto exactly these five criteria.
+
+### 19.2 What the agent actually does (and what it does NOT)
+
+**Does:** grounds a **multi-step reasoning trace** in the patient's Cognee recall; identifies the
+molecular target (gene, variant, consequence, mechanism, affected tissue); selects the best-fit
+**modality** via a deterministic decision tree with explicit alternatives-considered; scaffolds an
+**illustrative construct** (chemistry, length, module layout, and clearly-labeled *illustrative*
+sequence placeholders); picks a **delivery vector**; enumerates **modality-specific safety /
+off-target risks**; sketches **manufacturing** + **regulatory** (Plausible Mechanism Framework)
+plans; and emits an exportable **Design Brief**.
+
+**Does NOT (honesty guardrails — enforced in UI + payload):**
+- It does **not** output a real, orderable oligo/gRNA sequence. Sequence fields are deterministic,
+  clearly-labelled *illustrative placeholders* — never claimed to be manufacturable or validated.
+- It does **not** fabricate a monogenic target. If the graph has **no** actionable single-gene
+  driver (e.g. the adult PGx patients P1–P3), the agent returns a **"no n-of-1 target identified"**
+  result explaining why, and points back to the Formulation tab. This "knows when to say no"
+  behavior is a core realism feature, not a limitation to hide.
+- Every screen carries the persistent **"Research prototype — not for clinical use"** marker plus a
+  modality-appropriate "illustrative design, not a validated therapeutic" disclaimer.
+
+> **Honest capability note (told to the user):** a *production* n-of-1 designer needs specialized
+> tooling this prototype does not run yet — variant confirmation (ClinVar/gnomAD/VEP), ASO/gRNA design
+> with off-target search, RNA/protein structure, and immunogenicity modeling — plus optionally a
+> tool-using agent harness. The prototype is a **credible design-brief generator and decision-support
+> scaffold**, not an autonomous molecular engineer. **§19.8** documents a phased roadmap (Tier A/B/C)
+> for improving each gap without rewriting the pipeline; Tier A is feasible in-repo with free REST APIs.
+
+### 19.3 The design pipeline (agent steps)
+
+`app/services/therapy_designer.py`:
+
+1. **Recall molecular profile** — `recall_text()` with `TARGET_ANALYSIS_SYSTEM_PROMPT`: "From the
+   patient's graph, identify any single-gene disease-causing variant: gene, variant, molecular
+   consequence, inheritance, mechanism (loss-of-function / gain-of-function / splice / toxic-gain),
+   and affected tissue. If none exists, say so." (graceful empty list if Cognee is down).
+2. **Extract target** — deterministic parse of the recalled text + a small `MONOGENIC_TARGETS`
+   hint table (keyed by gene/disease tokens) to fill a structured `MolecularTarget`. If nothing
+   monogenic is found → return the honest "no target" result.
+3. **Select modality** — `select_modality(target)` decision tree over `MODALITY_LIBRARY`, returning
+   the chosen modality, a rationale, and the alternatives it considered/rejected.
+4. **Design construct** — `_build_construct(modality, target)` scaffolds the modality-specific
+   construct (illustrative).
+5. **Select delivery** — `select_delivery(modality, tissue)` from `DELIVERY_VECTORS`.
+6. **Assemble safety** — `_safety_items(modality_id)` from the modality library (+ target-specific
+   notes in a future `structure_immuno` pass).
+7. **Manufacturing + regulatory** — CDMO step list + Plausible Mechanism Framework mapping +
+   matching precedent (milasen / Baby KJ / n-Lorem).
+8. **Reasoning trace** — every step is recorded as a `ReasoningStep {step, title, detail, grounded}`
+   so the UI can reveal the agent's chain of thought (grounded = derived from real recall vs.
+   knowledge-base default).
+
+### 19.4 Modality knowledge base (`app/services/modalities.py`)
+
+`MODALITY_LIBRARY` keys (real classes, realistic parameters, all PROTOTYPE/illustrative):
+`ASO_SPLICE` (splice-switching 2'-MOE PS steric-block ASO — milasen-class), `ASO_GAPMER`
+(RNase-H1 gapmer for transcript knockdown), `SIRNA` (GalNAc-siRNA, hepatocyte), `MRNA_LNP`
+(nucleoside-modified mRNA in LNP for protein replacement), `AAV_GENE_ADDITION` (AAV gene transfer),
+`BASE_EDITOR` (ABE/CBE for point corrections — KJ-class), `PRIME_EDITOR` (prime editing for
+insertions/complex edits). Each entry: `name`, `modality_class`, `best_for` (mechanism keywords),
+`chemistry`, `typical_length`, `mechanism`, `delivery_default`, `safety[]`, `precedent`,
+`maturity`.
+
+`DELIVERY_VECTORS`: `INTRATHECAL_ASO`, `GALNAC`, `LNP_IV`, `AAV9_CNS`, `AAV8_LIVER`, `LNP_LIVER`
+— each with `route`, `target_tissue`, `rationale`, `considerations`.
+
+**Decision tree (deterministic) — mechanism → modality:**
+| Target mechanism | Chosen modality | Delivery |
+|---|---|---|
+| splice defect / cryptic exon / pseudoexon | `ASO_SPLICE` (steric-block) | intrathecal (CNS) or systemic |
+| gain-of-function / toxic transcript / dominant-negative | `ASO_GAPMER` or `SIRNA` (allele-selective knockdown) | GalNAc (liver) / intrathecal |
+| loss-of-function, protein replaceable, transient ok | `MRNA_LNP` | LNP IV/liver |
+| loss-of-function, durable, small gene | `AAV_GENE_ADDITION` | AAV serotype by tissue |
+| point mutation correctable by A→G / C→T transition | `BASE_EDITOR` (KJ-class) | LNP / AAV |
+| insertion / deletion / complex edit | `PRIME_EDITOR` | LNP / AAV |
+| no monogenic driver | *(none)* → "no n-of-1 target" | — |
+
+### 19.5 API (`app/routers/therapy.py`)
+
+| Method | Path | Body | Returns | Notes |
+|---|---|---|---|---|
+| POST | `/api/patients/{id}/custom-therapy` | `{goal, target_hint?, preferred_modality?}` | `CustomTherapy` | §19 design agent; recall-grounded, deterministic design |
+
+### 19.6 Schema (`app/schemas.py`)
+
+```python
+class CustomTherapyIn(BaseModel):
+    goal: str
+    target_hint: str | None = None
+    preferred_modality: str | None = None
+
+class MolecularTarget(BaseModel):
+    identified: bool
+    gene: str | None = None
+    variant: str | None = None
+    consequence: str | None = None       # e.g. "cryptic exon inclusion"
+    mechanism: str | None = None         # loss_of_function | gain_of_function | splice | toxic_gain
+    inheritance: str | None = None
+    tissue: str | None = None
+    disease: str | None = None
+    summary: str | None = None
+
+class ReasoningStep(BaseModel):
+    step: int
+    title: str
+    detail: str
+    grounded: bool = False               # derived from real recall vs KB default
+
+class ConstructBlock(BaseModel):
+    label: str
+    value: str
+    note: str | None = None
+
+class SafetyItem(BaseModel):
+    risk: str
+    severity: str = "moderate"           # high | moderate | low
+    mitigation: str
+
+class RegulatoryCriterion(BaseModel):
+    criterion: str                       # one of the 5 Plausible-Mechanism criteria
+    status: str                          # addressed | partial | pending
+    detail: str
+
+class CustomTherapy(BaseModel):
+    patient_id: str
+    design_id: str
+    goal: str
+    target: MolecularTarget
+    modality_id: str | None = None
+    modality_name: str | None = None
+    modality_class: str | None = None
+    modality_rationale: str | None = None
+    alternatives_considered: list[str] = []
+    construct_blocks: list[ConstructBlock] = []   # field named construct_blocks (avoids shadowing pydantic BaseModel.construct)
+    delivery_vector: str | None = None
+    delivery_route: str | None = None
+    delivery_rationale: str | None = None
+    reasoning: list[ReasoningStep] = []
+    safety: list[SafetyItem] = []
+    manufacturing: list[str] = []
+    regulatory_framework: str | None = None
+    regulatory_criteria: list[RegulatoryCriterion] = []
+    precedent: str | None = None
+    confidence: str = "illustrative"     # always illustrative for the prototype
+    disclaimers: list[str] = []
+    generated_at: datetime
 ```
+
+### 19.7 Frontend (Screen 6 — Custom Therapy)
+
+- **Tab** added to `PatientNav` (`{ slug: "therapy", label: "Custom Rx" }`).
+- `patients/[id]/therapy/page.tsx` (server) + `TherapyPageClient.tsx` (client shell): goal input +
+  **"Design candidate therapy"** button; on submit, calls `designTherapy()` in `lib/api.ts`.
+- `components/therapy/`:
+  - `TargetBrief.tsx` — molecular-target card (gene / variant / consequence / mechanism / tissue),
+    or the honest "no n-of-1 target identified" empty state that links to Formulation.
+  - `ReasoningTrace.tsx` — the agent's step-by-step chain (numbered, grounded-badge per step) — the
+    "agentic" centerpiece; steps reveal sequentially.
+  - `ModalityCard.tsx` — chosen modality + class + rationale + `alternatives_considered` chips.
+  - `ConstructDesign.tsx` — monospace construct blocks with an **"illustrative — not a real
+    sequence"** banner.
+  - `DeliverySafety.tsx` — delivery vector + route + severity-coded safety/off-target list.
+  - `RegulatoryPath.tsx` — Plausible Mechanism Framework criteria (addressed/partial/pending) +
+    precedent + manufacturing steps.
+  - Export **Design Brief** modal (JSON) via the shared `Modal`.
+- `lib/types.ts`: mirror the schema (`CustomTherapy`, `MolecularTarget`, `ReasoningStep`,
+  `ConstructBlock`, `SafetyItem`, `RegulatoryCriterion`).
+
+### 19.8 Where stronger tooling / models would slot in — and how to improve it
+
+The prototype is a **credible design-brief generator**, not an autonomous molecular engineer.
+The four gaps below are real; each is a **clean drop-in** behind the existing step functions in
+`therapy_designer.py` (`_extract_target`, `_build_construct`, `_safety_items`, orchestrated by
+`design_custom_therapy`). Proposed new modules live under `app/services/` and are called from those
+steps — no pipeline rewrite required.
+
+| Pillar | Prototype today | Drop-in hook | Proposed module |
+|---|---|---|---|
+| **1. Variant truth** | Parses recalled text + `MONOGENIC_TARGETS` hint table | After `_extract_target`, before modality selection | `variant_truth.py` |
+| **2. Sequence design** | Deterministic hash-based illustrative oligo/gRNA placeholders | Inside `_build_construct` | `sequence_design.py` |
+| **3. Structure / immunogenicity** | Static modality safety list from `MODALITY_LIBRARY` | Extend `_safety_items` + new UI block | `structure_immuno.py` |
+| **4. Stronger agent** | Single-shot recall → deterministic pipeline | Wrap steps in a tool-calling loop; `remember` tool outputs back to Cognee | `therapy_tools.py` + optional LangGraph/Cursor-SDK harness |
+
+Each pillar has three realistic tiers. **Tier A** is feasible inside this repo without new infra.
+**Tier B** needs reference genomes, longer jobs, or paid APIs. **Tier C** is CDMO / IND-grade.
+
+#### 1. Variant truth (ClinVar / gnomAD / Ensembl VEP)
+
+**Today:** gene/variant/consequence come from Cognee recall + regex + the demo `MONOGENIC_TARGETS`
+table. Regulatory criterion 1 is `partial` when no HGVS token is parsed.
+
+**Tier A — free REST, no local genomics stack (recommended next step):**
+- **Ensembl VEP REST** (`POST https://rest.ensembl.org/vep/human/hgvs/...`) — consequence,
+  transcript impact, SIFT/PolyPhen when available. No API key.
+- **ClinVar** via NCBI E-utilities (`esearch` + `esummary` on gene or variant) or the ClinVar
+  Variation API — clinical significance, review status, star rating.
+- **gnomAD** via the public **GraphQL API** (`https://gnomad.broadinstitute.org/api`) or a single
+  allele-frequency lookup — flags ultra-rare vs. common polymorphism.
+- **Output:** extend `MolecularTarget` with optional fields:
+  `clinvar_significance`, `clinvar_review_status`, `gnomad_af`, `vep_consequence`, `vep_impact`,
+  `variant_confidence` (`confirmed` | `recalled_only` | `conflict`).
+- **UI:** chips on `TargetBrief` ("ClinVar: Pathogenic ★★★", "gnomAD AF: absent", "VEP: splice_donor_variant").
+- **Graceful degradation:** if APIs time out, fall back to today's recalled-only target and set
+  `variant_confidence: recalled_only` — never block the design.
+
+**Tier B:** batch VEP for all transcripts; OMIM/HPO phenotype match; local ClinVar VCF mirror for
+offline demos.
+
+**Tier C:** ACMG/AMP classification pipeline, segregation + functional assay evidence, signed
+variant-interpretation report for an IRB/IND package.
+
+#### 2. Sequence design (ASO / gRNA + off-target + RNA fold)
+
+**Today:** `_illustrative_sequence()` produces stable, labelled placeholders. Honest and sufficient
+for a design-brief demo; not orderable.
+
+**Tier A — better-than-placeholder without a full design engine:**
+- **Ensembl sequence fetch** for the gene/transcript around the variant — derive a *transcript-aware*
+  target window (intron/exon boundary) instead of a hash string. Still label
+  `"candidate window — requires off-target validation"`.
+- **ViennaRNA** (`RNA.fold()` via the `ViennaRNA` Python bindings, or subprocess to `RNAfold`) —
+  compute MFE and dot-bracket for the candidate ASO:gRNA duplex; flag strong self-structure /
+  homodimer risk as a new `ConstructBlock` or safety note.
+- **NCBI BLAST short-sequence search** (REST, async poll) — return top off-target hit count +
+  best hit locus as a qualitative risk score. Slow (~30–120s) → run in background or show
+  `"off-target screen: pending"` with a follow-up poll endpoint.
+
+**Tier B — real design tooling:**
+- **Cas-OFFinder** or **CRISPOR** (local, needs hg38 reference + index) for genome-wide gRNA
+  off-target nomination.
+- **BLAST+** locally for ASO transcriptome-wide complementarity.
+- **Oligo design helpers:** IDT OligoAnalyzer API (paid) or open heuristics (GC%, Tm, 2'-MOE length
+  rules from published ASO papers).
+- **Codon optimization** for mRNA/AAV (`python-codon-optimization` or vendor tools).
+
+**Tier C:** vendor-grade ASO design (Ionis/BIOLigo-style), full transcriptome + repeat-masked
+genome screen, order-ready synthesis file with QC specs.
+
+**Schema addition (when Tier A+ lands):**
+```python
+class SequenceDesignMeta(BaseModel):
+    status: str              # placeholder | candidate_window | designed | validated
+    method: str              # hash_placeholder | ensembl_window | viennarna_checked | blast_screened
+    off_target_hits: int | None = None
+    mfe_kcal_mol: float | None = None
+    structure_note: str | None = None
+    disclaimers: list[str] = []
+```
+
+#### 3. Structure / immunogenicity (AlphaFold-class + MHC)
+
+**Today:** modality-generic safety bullets from `MODALITY_LIBRARY`.
+
+**Tier A — lightweight, API-friendly:**
+- **ESMFold API** (Meta, public endpoint) or **AlphaFold DB** lookup if the gene has a cached
+  structure — show "predicted fold available" + link on `ConstructDesign` for mRNA/AAV modalities.
+- **IEDB NetMHCpan REST** (or pre-computed epitope tables) — flag high-affinity HLA binders in the
+  corrected protein region as an immunogenicity *consideration* (not a pass/fail).
+- **Literature-based AAV capsid notes** from the modality KB (already present) + optional
+  `pre-existing_immunity` checklist item for AAV9.
+
+**Tier B:** local ColabFold/AlphaFold3 for novel missense; **NetMHCpan 4.x** batch run;
+**T-cell epitope** clustering (IEDB Immunogenicity Predictor).
+
+**Tier C:** full immunogenicity risk assessment, capsid engineering simulation, in-silico
+ADA/neutralizing-antibody risk for repeat dosing.
+
+#### 4. Stronger agent (tool-using harness + Cognee memory)
+
+**Today:** one `recall_text()` call → deterministic Python pipeline. Fast, auditable, hackathon-safe.
+
+**Tier A — explicit tool registry without a heavy framework:**
+- Add `therapy_tools.py` with typed async tools:
+  `lookup_clinvar(gene, variant)`, `run_vep(hgvs)`, `fetch_transcript_window(gene, variant)`,
+  `fold_rna(seq)`, `blast_short(seq)`.
+- Orchestrator in `design_custom_therapy`:
+  1. recall target (unchanged)
+  2. if `variant` present → run Tier-A variant tools in parallel (`asyncio.gather`)
+  3. pass enriched target into `_build_construct` / `_safety_items`
+  4. **`remember_text`** a compact summary of external tool results back into the patient's Cognee
+     dataset so the next chat/recall can cite ClinVar/gnomAD evidence — this is the "agent harness
+     with durable memory" story without replacing the deterministic modality tree.
+- Extend `ReasoningStep` with optional `tool: str | None` and `tool_result_summary: str | None` so
+  the UI can badge steps as `"ClinVar API"` vs `"knowledge base"`.
+
+**Tier B:** LangGraph (or similar) state machine with retry, human-in-the-loop approval before
+export, and a `/custom-therapy/stream` SSE endpoint for step-by-step UI reveal.
+
+**Tier C:** domain-tuned model or Cursor-SDK / Claude Code-style harness orchestrating Tier-B/C
+bioinformatics tools, with Cognee as the longitudinal case file. Requires ops budget, reference
+data, and clinical governance — not a 48h hackathon scope.
+
+#### Recommended build order (if continuing past the hackathon)
+
+1. **Variant truth (Tier A)** — highest credibility lift per hour; directly upgrades regulatory
+   criterion 1 from `partial` → `addressed` for P4.
+2. **Agent tool registry (Tier A)** — wire variant tools + `remember` of results; makes the Cognee
+   lifecycle visible to judges.
+3. **Sequence Tier A** — Ensembl window + ViennaRNA fold; sequences become "candidate windows" not
+   random strings, while staying honestly labelled.
+4. **BLAST off-target (Tier A/B)** — async job + UI poll.
+5. Structure / immunogenicity Tier A — nice-to-have for mRNA/AAV cases.
+
+#### What we are NOT claiming
+
+Even after Tier A, outputs remain **research prototypes**. Tier A makes the brief *more evidence-backed*;
+it does not make sequences orderable or therapies prescribable. Upgrade `confidence` from
+`illustrative` → `evidence_assisted` only when external APIs return data; never to `validated`.
+
+The current prototype is architected so each tier is a clean drop-in behind the existing step
+functions — no pipeline rewrite required.
+
+### 19.9 P4 mock patient — the n-of-1 demo hero
+
+See §10 (P4 — **Leo Martinez**, pediatric splice-variant neuronal disease, milasen-class ASO
+candidate). P1–P3 intentionally return "no n-of-1 target" here (they're PGx-regimen patients), which
+demonstrates the agent's honesty.
+
+### 19.10 Build status — VERIFIED this session
+
+All of §19 is **built and live-verified**:
+- Backend: `app/services/modalities.py` (modality KB + `select_modality`/`select_delivery` decision
+  trees), `app/services/therapy_designer.py` (`design_custom_therapy` pipeline), `app/routers/therapy.py`
+  (`POST /api/patients/{id}/custom-therapy`, wired in `main.py`), schemas in `app/schemas.py`.
+- Frontend: `Custom Rx` tab, `patients/[id]/therapy/{page,TherapyPageClient}.tsx`, and the six
+  `components/therapy/*` cards. `npm run build` (Next 16 / Turbopack) + `tsc --noEmit` + `eslint` all pass.
+- Live smoke tests against the running backend:
+  - **P4 Leo** → `target.identified=true`, `MFSD8 c.863+2117A>G`, mechanism `splice`, modality
+    `ASO_SPLICE` (splice-switching ASO), delivery **intrathecal**, milasen precedent, 3 safety items,
+    5 Plausible-Mechanism criteria, `confidence: illustrative`, disclaimers present. Persisted to
+    Supabase `formulations` (prefixed `n-of-1:`).
+  - **P1 Maya** → `target.identified=false`, `confidence: no_target`, honest "no monogenic driver"
+    message pointing back to Formulation.
+- Auth: `/patients/{id}/therapy` is guarded by `proxy.ts` (unauth → `307 /login?next=…`), same as the
+  other patient tabs.
+- **§19.8 expanded (Jul 2026):** phased Tier A/B/C roadmap for variant truth, sequence design,
+  structure/immunogenicity, and tool-using agent harness — with concrete APIs, drop-in hooks, schema
+  additions, and recommended build order. Tier A modules are **planned, not yet implemented**.

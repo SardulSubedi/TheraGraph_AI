@@ -50,6 +50,18 @@ export interface GeneticRisk {
   severity: string;
   affected: string[];
   recommendation?: string | null;
+  evidence_level?: string | null;
+  guideline?: string | null;
+  source?: string | null;
+}
+
+export interface DrugInteraction {
+  drug_a: string;
+  drug_b: string;
+  severity: string;
+  mechanism: string;
+  effect: string;
+  management: string;
 }
 
 export interface Formulation {
@@ -64,10 +76,79 @@ export interface Formulation {
   contraindications_flagged: string[];
   contraindication_details?: ContraindicationDetail[];
   genetic_risks?: GeneticRisk[];
+  drug_interactions?: DrugInteraction[];
   safety_notes?: string[];
   monitoring?: string[];
   rationale: string;
   generated_at: string;
+}
+
+export interface MolecularTarget {
+  identified: boolean;
+  gene?: string | null;
+  variant?: string | null;
+  consequence?: string | null;
+  mechanism?: string | null;
+  inheritance?: string | null;
+  tissue?: string | null;
+  disease?: string | null;
+  summary?: string | null;
+}
+
+export interface ReasoningStep {
+  step: number;
+  title: string;
+  detail: string;
+  grounded: boolean;
+}
+
+export interface ConstructBlock {
+  label: string;
+  value: string;
+  note?: string | null;
+}
+
+export interface SafetyItem {
+  risk: string;
+  severity: string;
+  mitigation: string;
+}
+
+export interface RegulatoryCriterion {
+  criterion: string;
+  status: string;
+  detail: string;
+}
+
+export interface CustomTherapy {
+  patient_id: string;
+  design_id: string;
+  goal: string;
+  target: MolecularTarget;
+  modality_id?: string | null;
+  modality_name?: string | null;
+  modality_class?: string | null;
+  modality_rationale?: string | null;
+  alternatives_considered: string[];
+  construct_blocks: ConstructBlock[];
+  delivery_vector?: string | null;
+  delivery_route?: string | null;
+  delivery_rationale?: string | null;
+  reasoning: ReasoningStep[];
+  safety: SafetyItem[];
+  manufacturing: string[];
+  regulatory_framework?: string | null;
+  regulatory_criteria: RegulatoryCriterion[];
+  precedent?: string | null;
+  confidence: string;
+  disclaimers: string[];
+  generated_at: string;
+}
+
+export interface CustomTherapyIn {
+  goal: string;
+  target_hint?: string | null;
+  preferred_modality?: string | null;
 }
 
 export interface ChatMessage {

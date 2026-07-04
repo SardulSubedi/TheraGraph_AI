@@ -69,6 +69,24 @@ function RiskCard({ risk }: { risk: GeneticRisk }) {
           {risk.implication}
         </p>
 
+        {(risk.evidence_level || risk.guideline) && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {risk.evidence_level && (
+              <span className="rounded border border-border bg-surface px-1.5 py-0.5 text-[11px] font-medium text-text-secondary">
+                {risk.evidence_level}
+              </span>
+            )}
+            {risk.guideline && (
+              <span
+                className="truncate text-[11px] text-text-secondary/70"
+                title={risk.guideline}
+              >
+                {risk.guideline}
+              </span>
+            )}
+          </div>
+        )}
+
         {risk.affected.length > 0 && (
           <div className="mt-3">
             <p className="micro-label text-text-secondary">Affected agents</p>

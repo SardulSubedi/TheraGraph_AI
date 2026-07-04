@@ -1,0 +1,29 @@
+Patient: Leo Martinez, DOB 2021-05-09, MRN LM-7788, Sex M (pediatric).
+Primary diagnosis: Neuronal ceroid lipofuscinosis type 7 (CLN7 / late-infantile Batten disease),
+molecularly confirmed (MFSD8 compound heterozygous — see genome report).
+
+Presenting course:
+  - Normal development until ~24 months.
+  - 2.5 yr: onset of myoclonic and generalized seizures, partially controlled on levetiracetam +
+    valproate.
+  - 3 yr: progressive vision loss (retinal degeneration), language regression, ataxia.
+  - Rapid neurodevelopmental regression consistent with late-infantile NCL.
+
+Investigations:
+  - Brain MRI: progressive cerebral and cerebellar atrophy.
+  - EEG: multifocal epileptiform activity, photoparoxysmal response.
+  - Electron microscopy (skin biopsy): fingerprint/curvilinear lysosomal storage inclusions.
+  - Enzyme panel: TPP1 (CLN2) normal — excludes cerliponase alfa; PPT1 (CLN1) normal.
+  - Trio genome sequencing: MFSD8 c.754+2T>A (null) / c.863+2117A>G (deep-intronic cryptic
+    pseudoexon). Splicing defect confirmed on RNA studies (aberrant transcript with 87-nt insertion).
+
+Current medications: levetiracetam, valproate (symptomatic seizure control only).
+Allergies: none known.
+
+Family: unaffected consanguineous parents (both heterozygous carriers); one healthy older sibling.
+
+Clinical goal: There is NO approved disease-modifying therapy for CLN7. The family and care team are
+seeking an INDIVIDUALIZED (n-of-1) therapeutic that addresses the underlying MFSD8 splicing defect —
+specifically a splice-switching antisense oligonucleotide to mask the cryptic splice site and
+restore normal MFSD8 splicing (as was done with milasen for a related CLN7 patient), delivered
+intrathecally to reach the CNS. Halt or slow neurodegeneration and preserve remaining function.

@@ -1,0 +1,30 @@
+#SAMPLE=LEO_MARTINEZ
+#SOURCE=TheraGraph mock clinical-genome report (demo only — not a clinical report)
+#REPORT_TYPE=Diagnostic whole-genome sequencing (trio: proband + parents)
+
+PRIMARY_FINDING: Monogenic, disease-causing.
+GENE=MFSD8 (CLN7)   DISEASE=Neuronal ceroid lipofuscinosis type 7 (CLN7 / late-infantile Batten disease)
+INHERITANCE=Autosomal recessive (compound heterozygous)
+
+VARIANTS:
+  Allele 1: MFSD8 c.754+2T>A  -> canonical splice-donor loss (pathogenic, null) [ClinVar: Pathogenic]
+  Allele 2: MFSD8 c.863+2117A>G (deep-intronic) -> creates a CRYPTIC PSEUDOEXON; inserts 87 nt,
+            frameshift and premature stop (loss of functional MFSD8 protein). [novel, patient-specific]
+
+MOLECULAR_CONSEQUENCE:
+  The deep-intronic variant on allele 2 activates a cryptic splice site, causing PSEUDOEXON
+  INCLUSION in the MFSD8 mRNA. This is a SPLICING defect amenable to splice-switching correction.
+  Mechanism: loss-of-function via aberrant splicing.
+  Target tissue: central nervous system (neurons).
+
+PHARMACOGENOMICS (unremarkable — this is NOT a drug-metabolism case):
+  GENE=CYP2D6  DIPLOTYPE=*1/*1  PHENOTYPE=Normal Metabolizer
+  GENE=CYP2C19 DIPLOTYPE=*1/*1  PHENOTYPE=Normal Metabolizer
+  GENE=TPMT    DIPLOTYPE=*1/*1  PHENOTYPE=Normal Metabolizer
+  No pharmacogenomic prescribing flags.
+
+NOTE: MFSD8 encodes a lysosomal membrane protein. The allele-2 deep-intronic variant is a
+strong candidate for an n-of-1 SPLICE-SWITCHING ANTISENSE OLIGONUCLEOTIDE that masks the cryptic
+splice site to restore normal MFSD8 splicing (the milasen mechanism used for CLN7 Batten disease).
+NOTE: No approved disease-modifying therapy exists for CLN7. Enzyme replacement is not available
+for MFSD8 (unlike CLN2/TPP1).

@@ -64,6 +64,7 @@ def _compose_rationale(
     indication: str,
     modules: list[dict],
     risks: list[dict],
+    interactions: list[dict],
 ) -> str:
     """Build a clean, clinician-style rationale from the deterministic decision logic."""
     lines: list[str] = []
@@ -92,6 +93,13 @@ def _compose_rationale(
     if notes:
         lines.append("Dose adjustments — " + " ".join(notes))
 
+    if interactions:
+        parts = [
+            f"{i['drug_a']} + {i['drug_b']} ({i['severity']}): {i['management']}"
+            for i in interactions
+        ]
+        lines.append("Interaction screening — " + " ".join(parts))
+
     return "\n\n".join(lines)
 
 
@@ -119,6 +127,7 @@ async def generate_formulation(patient_id: str, indication: str) -> dict:
     for m in modules:
         m["ratio"] = round(m["daily_dose_mg"] / total_daily, 3)
 
+    interactions = blocks.interactions_for(component_ids)
     monitoring = blocks.monitoring_plan(component_ids, rules)
 
     formulation = {
@@ -133,9 +142,10 @@ async def generate_formulation(patient_id: str, indication: str) -> dict:
         "contraindications_flagged": [c["drug"] for c in contra_details],
         "contraindication_details": contra_details,
         "genetic_risks": risks,
+        "drug_interactions": interactions,
         "safety_notes": [r["implication"] for r in rules],
         "monitoring": monitoring,
-        "rationale": _compose_rationale(indication, modules, risks),
+        "rationale": _compose_rationale(indication, modules, risks, interactions),
         "generated_at": datetime.now(timezone.utc),
     }
     return formulation

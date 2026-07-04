@@ -1,6 +1,8 @@
 import type {
   ChatMessage,
   ChatResponse,
+  CustomTherapy,
+  CustomTherapyIn,
   DeleteResponse,
   FeedbackEntry,
   FeedbackResponse,
@@ -107,6 +109,20 @@ export async function formulate(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ indication }),
   });
+}
+
+export async function designTherapy(
+  patientId: string,
+  body: CustomTherapyIn,
+): Promise<CustomTherapy> {
+  return request<CustomTherapy>(
+    `/api/patients/${patientId}/custom-therapy`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 export async function chatWithPatient(
