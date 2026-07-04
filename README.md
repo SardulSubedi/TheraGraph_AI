@@ -1,5 +1,5 @@
 # TheraGraph AI
-
+Written by chatgpt
 AI-powered personalized-medicine memory engine. A clinician uploads a patient's genomic +
 clinical data → we push it into a **per-patient Cognee knowledge graph** (`remember`), traverse
 it (`recall`) to compose a therapy from **pre-approved modular drug blocks**, re-enrich as
